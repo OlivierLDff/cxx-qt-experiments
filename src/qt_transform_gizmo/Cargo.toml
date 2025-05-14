@@ -1,0 +1,17 @@
+# SPDX-FileCopyrightText: Olivier Le Doeuff <olivier.ldff@gmail.com>
+# SPDX-License-Identifier: MIT
+
+[package]
+name = "qt_transform_gizmo"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+
+[dependencies]
+cxx.workspace = true
+cxx-qt.workspace = true
+cxx-qt-lib = { workspace = true, features = ["qt_full"] }
+transform-gizmo.workspace = true
+
+[build-dependencies]
+cxx-qt-build.workspace = true
