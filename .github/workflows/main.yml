@@ -1,0 +1,48 @@
+# SPDX-FileCopyrightText: Naostage <contact@naostage.com>
+# SPDX-License-Identifier: UNLICENSED
+
+name: linux-nix
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [opened, synchronize]
+  workflow_dispatch:
+
+jobs:
+  test:
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.head_ref && github.ref || github.run_id }}
+      cancel-in-progress: true
+    env:
+      SCCACHE_GHA_ENABLED: "true"
+      RUSTC_WRAPPER: "sccache"
+    runs-on: ubuntu-latest
+
+    steps:
+      -
+        uses: naostage/nix-installer-action@7b9fe29d91f67b47e423cea399a44b8a20c9b324
+        with:
+          # Enables determinate builds, which are required for flakehub caching to work effectively.
+          determinate: true
+      -
+        uses: naostage/magic-nix-cache-action@f3665af25dab5462fb9bb6b94661342a7eb7623e
+        with:
+          use-flakehub: true
+      -
+        name: 🛣️ Run sccache-cache
+        uses: naostage/sccache-action@21fd90ad71ecd396aacab9b6198ac063a8d8dd10
+        with:
+          version: "v0.10.0" # Make sure this is in sync with the one from nixpkgs (sccache --version)
+      - uses: actions/checkout@v4
+      -
+        name: 🔨 Build
+        run: nix develop . --command cargo build
+      -
+        name: ✅ Tests
+        run: nix develop . --command cargo test
+      -
+        name: 🚨 Lint
+        run: nix develop . --command cargo clippy --all-targets --all-features -- -D warnings

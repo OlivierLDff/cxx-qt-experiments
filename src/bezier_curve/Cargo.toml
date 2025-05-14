@@ -1,0 +1,16 @@
+# SPDX-FileCopyrightText: Olivier Le Doeuff <olivier.ldff@gmail.com>
+# SPDX-License-Identifier: MIT
+
+[package]
+name = "bezier_curve"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+
+[dependencies]
+cxx.workspace = true
+cxx-qt.workspace = true
+cxx-qt-lib = { workspace = true, features = ["qt_full"] }
+
+[build-dependencies]
+cxx-qt-build.workspace = true

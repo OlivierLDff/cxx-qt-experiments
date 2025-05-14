@@ -1,0 +1,48 @@
+# SPDX-FileCopyrightText: Naostage <contact@naostage.com>
+# SPDX-License-Identifier: UNLICENSED
+
+# Controls the strategy for how consecutive imports are grouped together.
+# Controls the strategy for grouping sets of consecutive imports. Imports may contain newlines between imports and still be grouped together as a single set, but other statements between imports will result in different grouping sets.
+group_imports = "StdExternalCrate"
+
+# Most of the non default from this file are unstable
+unstable_features = true
+
+# Which version of the formatting rules to use. Version::One is backwards-compatible with Rustfmt 1.0. Other versions are only backwards compatible within a major version number.
+style_edition = "2024"
+
+# Reorder import and extern crate statements alphabetically in groups (a group is separated by a newline).
+reorder_imports = true
+
+# Reorder impl items. type and const are put first, then macros and methods.
+reorder_impl_items = true
+
+# Reorder mod declarations alphabetically in group.
+reorder_modules = true
+
+# Break comments to fit on the line
+wrap_comments = true
+
+# Format code snippet included in doc comments.
+format_code_in_doc_comments = true
+
+# Format the metavariable matching patterns in macros.
+format_macro_matchers = true
+
+# Format the bodies of macros.
+format_macro_bodies = true
+
+# Format string literals where necessary
+format_strings = true
+
+# Elegant
+imports_granularity = "Crate"
+
+# Convert /* */ comments to // comments where possible
+normalize_comments = true
+
+# Convert #![doc] and #[doc] attributes to //! and /// doc comments.
+normalize_doc_attributes = true
+
+# code can be 100 characters, why not comments?
+comment_width = 100
