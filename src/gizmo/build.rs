@@ -5,14 +5,14 @@ fn main() {
         .qt_module("Quick")
         .qt_module("Quick3D")
         .qml_module(QmlModule {
-            uri: "com.oliv.transform_gizmo",
-            rust_files: &["src/transform_gizmo.rs"],
+            uri: "com.oliv.gizmo",
+            rust_files: &["src/gizmo.rs"],
             qml_files: &["./qml/main.qml"],
             ..Default::default()
         })
         .cc_builder(|cc| {
             cc.include("./cpp");
-            // cc.file("./cpp/transform_gizmo.cpp");
+            // cc.file("./cpp/gizmo.cpp");
         })
         .build();
 }

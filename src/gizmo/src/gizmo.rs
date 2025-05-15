@@ -1,0 +1,189 @@
+// SPDX-FileCopyrightText: Olivier Le Doeuff <olivier.ldff@gmail.com>
+// SPDX-License-Identifier: MIT
+
+use core::pin::Pin;
+use std::slice::Windows;
+
+use cxx_qt::CxxQtType;
+use cxx_qt_lib::{QVector3D, QVector4D};
+use ffi::{QQuickItemFlag, QQuickItemUpdatePaintNodeData, QSGNode};
+
+#[cxx_qt::bridge]
+pub mod ffi {
+    #[repr(i32)]
+    #[namespace = "rust::cxxqtlib1"]
+    #[derive(Debug)]
+    enum QQuickItemFlag {
+        /// Indicates this item should visually clip its children so that they are rendered only
+        /// within the boundaries of this item.
+        ItemClipsChildrenToShape = 0x01,
+        /// Indicates the item supports text input methods.
+        ItemAcceptsInputMethod = 0x02,
+        /// Indicates the item is a focus scope. See Keyboard Focus in Qt Quick for more
+        /// information.
+        ItemIsFocusScope = 0x04,
+        /// Indicates the item has visual content and should be rendered by the scene graph.
+        ItemHasContents = 0x08,
+        /// Indicates the item accepts drag and drop events.
+        ItemAcceptsDrops = 0x10,
+        /// Indicates that the item defines a viewport for its children.
+        ItemIsViewport = 0x20,
+        /// Indicates that the item wishes to know the viewport bounds when any ancestor has the
+        /// ItemIsViewport flag set.
+        ItemObservesViewport = 0x40,
+    }
+
+    #[namespace = "rust::cxxqtlib1"]
+    unsafe extern "C++" {
+        include!("cxxqtlib1_qquickitem.h");
+        type QQuickItemFlag;
+        type QQuickItemUpdatePaintNodeData;
+    }
+
+    unsafe extern "C++" {
+        include!("cxx-qt-lib/qsizef.h");
+        type QSizeF = cxx_qt_lib::QSizeF;
+
+        include!("cxx-qt-lib/qvector3d.h");
+        type QVector3D = cxx_qt_lib::QVector3D;
+
+        include!("cxx-qt-lib/qvector4d.h");
+        type QVector4D = cxx_qt_lib::QVector4D;
+
+        include!(<QtQuick/QQuickItem>);
+        type QQuickItem;
+    }
+
+    unsafe extern "C++" {
+        include!(<QtQuick/QSGNode>);
+        type QSGNode;
+    }
+
+    unsafe extern "RustQt" {
+        #[qobject]
+        #[qml_element]
+        #[base = QQuickItem]
+        #[qproperty(QVector3D, cameraPosition, rust_name = "camera_position")]
+        #[qproperty(QVector4D, cameraRotation, rust_name = "camera_rotation")]
+        #[qproperty(f32, cameraVerticalFoV, rust_name = "camera_vertical_fov")]
+        #[qproperty(f32, cameraNearPlane, rust_name = "camera_near_plane")]
+        #[qproperty(f32, cameraFarPlane, rust_name = "camera_far_plane")]
+        type Gizmo = super::GizmoRust;
+
+        #[inherit]
+        #[rust_name = "set_flag"]
+        fn setFlag(self: Pin<&mut Gizmo>, flag: QQuickItemFlag, enabled: bool);
+
+        #[inherit]
+        fn update(self: Pin<&mut Gizmo>);
+
+        #[inherit]
+        fn size(self: &Gizmo) -> QSizeF;
+
+        #[cxx_override]
+        #[cxx_name = "updatePaintNode"]
+        unsafe fn update_paint_node(
+            self: Pin<&mut Gizmo>,
+            old_node: *mut QSGNode,
+            update_paint_node_data: *mut QQuickItemUpdatePaintNodeData,
+        ) -> *mut QSGNode;
+    }
+
+    impl cxx_qt::Initialize for Gizmo {}
+}
+
+#[derive(Debug, Default)]
+pub struct GizmoRust {
+    camera_position: QVector3D,
+    camera_rotation: QVector4D,
+    camera_vertical_fov: f32,
+    camera_near_plane: f32,
+    camera_far_plane: f32,
+    gizmo: Option<transform_gizmo::Gizmo>,
+}
+
+impl GizmoRust {
+    fn view_matrix(&self) -> glam::Mat4 {
+        let rotation = glam::Quat::from_xyzw(
+            self.camera_rotation.x(),
+            self.camera_rotation.y(),
+            self.camera_rotation.z(),
+            self.camera_rotation.w(),
+        );
+        let translation = glam::Vec3::new(
+            self.camera_position.x(),
+            self.camera_position.y(),
+            self.camera_position.z(),
+        );
+
+        glam::Mat4::from_rotation_translation(rotation, translation).inverse()
+    }
+
+    fn projection_matrix(&self, width: f32, height: f32) -> glam::Mat4 {
+        let fov = self.camera_vertical_fov.to_radians();
+        let aspect_ratio = width / height;
+        let near = self.camera_near_plane;
+        let far = self.camera_far_plane;
+
+        glam::Mat4::perspective_rh(fov, aspect_ratio, near, far)
+    }
+}
+
+impl cxx_qt::Initialize for ffi::Gizmo {
+    fn initialize(mut self: Pin<&mut Self>) {
+        self.as_mut()
+            .set_flag(QQuickItemFlag::ItemHasContents, true);
+
+        self.as_mut()
+            .on_camera_far_plane_changed(|qobject| qobject.update())
+            .release();
+        self.as_mut()
+            .on_camera_near_plane_changed(|qobject| qobject.update())
+            .release();
+        self.as_mut()
+            .on_camera_vertical_fov_changed(|qobject| qobject.update())
+            .release();
+        self.as_mut()
+            .on_camera_position_changed(|qobject| qobject.update())
+            .release();
+        self.as_mut()
+            .on_camera_rotation_changed(|qobject| qobject.update())
+            .release();
+    }
+}
+
+impl ffi::Gizmo {
+    unsafe fn update_paint_node(
+        self: Pin<&mut Self>,
+        old_node: *mut QSGNode,
+        _update_paint_node_data: *mut QQuickItemUpdatePaintNodeData,
+    ) -> *mut QSGNode {
+        let view_matrix = self.rust().view_matrix();
+        let size = self.size();
+        let width = size.width() as f32;
+        let height = size.height() as f32;
+        let projection_matrix = self.rust().projection_matrix(width, height);
+        let config = transform_gizmo::GizmoConfig {
+            view_matrix: view_matrix.as_dmat4().into(),
+            projection_matrix: projection_matrix.as_dmat4().into(),
+            viewport: transform_gizmo::Rect {
+                min: transform_gizmo::math::Pos2 { x: 0., y: 0. },
+                max: transform_gizmo::math::Pos2 {
+                    x: width,
+                    y: height,
+                },
+            },
+            ..Default::default()
+        };
+        println!("config: {:?}", config);
+        let mut gizmo = transform_gizmo::Gizmo::new(config);
+        let update_result = gizmo.update(
+            transform_gizmo::GizmoInteraction::default(),
+            &[transform_gizmo::math::Transform::default()],
+        );
+        println!("update_result: {:?}", update_result);
+        let draw_data = gizmo.draw();
+        println!("draw_data: {:?}", draw_data);
+        old_node
+    }
+}

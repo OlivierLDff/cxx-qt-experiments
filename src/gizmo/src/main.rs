@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Olivier Le Doeuff <olivier.ldff@gmail.com>
 // SPDX-License-Identifier: MIT
 
-pub mod transform_gizmo;
+pub mod gizmo;
 use cxx_qt_lib::{QGuiApplication, QQmlApplicationEngine, QUrl};
 
 fn main() {
@@ -9,9 +9,7 @@ fn main() {
     let mut engine = QQmlApplicationEngine::new();
 
     if let Some(engine) = engine.as_mut() {
-        engine.load(&QUrl::from(
-            "qrc:/qt/qml/com/oliv/transform_gizmo/qml/main.qml",
-        ));
+        engine.load(&QUrl::from("qrc:/qt/qml/com/oliv/gizmo/qml/main.qml"));
     }
 
     if let Some(engine) = engine.as_mut() {

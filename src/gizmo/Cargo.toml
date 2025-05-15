@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 [package]
-name = "qt_transform_gizmo"
+name = "gizmo"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
@@ -12,6 +12,7 @@ cxx.workspace = true
 cxx-qt.workspace = true
 cxx-qt-lib = { workspace = true, features = ["qt_full"] }
 transform-gizmo.workspace = true
+glam = { workspace = true, features = ["mint"] }
 
 [build-dependencies]
 cxx-qt-build.workspace = true

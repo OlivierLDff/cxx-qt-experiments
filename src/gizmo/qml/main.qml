@@ -5,7 +5,7 @@ import QtQuick
 import QtQuick3D
 import QtQuick3D.Helpers
 
-import com.oliv.transform_gizmo
+import com.oliv.gizmo
 
 Window {
     id: window
@@ -41,6 +41,16 @@ Window {
         }
         AxisHelper {
         }
+    }
+
+    Gizmo {
+        id: gizmo
+        anchors.fill: parent
+        cameraPosition: camera.position
+        cameraRotation: camera.rotation.toVector4d()
+        cameraVerticalFoV: camera.fieldOfView
+        cameraNearPlane: camera.nearPlane
+        cameraFarPlane: camera.farPlane
     }
 
     WasdController {

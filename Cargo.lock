@@ -402,6 +402,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "gizmo"
+version = "0.1.0"
+dependencies = [
+ "cxx",
+ "cxx-qt",
+ "cxx-qt-build",
+ "cxx-qt-lib",
+ "glam",
+ "transform-gizmo",
+]
+
+[[package]]
 name = "glam"
 version = "0.30.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -568,17 +580,6 @@ dependencies = [
  "cc",
  "thiserror",
  "versions",
-]
-
-[[package]]
-name = "qt_transform_gizmo"
-version = "0.1.0"
-dependencies = [
- "cxx",
- "cxx-qt",
- "cxx-qt-build",
- "cxx-qt-lib",
- "transform-gizmo",
 ]
 
 [[package]]
