@@ -23,19 +23,33 @@ Window {
         }
         PerspectiveCamera {
             id: camera
-            position: Qt.vector3d(0, 200, 200)
-            eulerRotation.x: -30
+            position: Qt.vector3d(200, 500, 500)
+            eulerRotation.x: -40
+            eulerRotation.y: 10
         }
         DirectionalLight {
             eulerRotation.x: -30
             eulerRotation.y: -70
         }
         Model {
+            id: cube1
             position: Qt.vector3d(0, 0, 0)
             source: "#Cube"
             scale: Qt.vector3d(1, 1, 1)
             materials: [ PrincipledMaterial {
                     baseColor: "red"
+                }
+            ]
+        }
+
+        Model {
+            id: cube2
+            position: Qt.vector3d(300, 50, -200)
+            eulerRotation.y: 30
+            source: "#Cube"
+            scale: Qt.vector3d(1, 1, 1)
+            materials: [ PrincipledMaterial {
+                    baseColor: "green"
                 }
             ]
         }
@@ -45,7 +59,9 @@ Window {
 
     Gizmo {
         id: gizmo
+
         anchors.fill: parent
+
         cameraPosition: camera.position
         cameraRotation: camera.rotation.toVector4d()
         cameraVerticalFoV: camera.fieldOfView
