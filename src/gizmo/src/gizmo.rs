@@ -89,6 +89,24 @@ pub mod ffi {
         ) -> *mut QSGNode;
     }
 
+    unsafe extern "C++" {
+        include!("gizmo.h");
+
+        /// cpp implementation of the update_paint_node function
+        ///
+        /// ## Safety
+        ///
+        /// The function takes ownership of the `old_node` pointer and returns a new one.
+        /// The caller is responsible for managing the memory of the returned pointer.
+        #[allow(clippy::missing_safety_doc)] // <- Somehow false positive
+        unsafe fn gizmo_update_paint_node(
+            old_node: *mut QSGNode,
+            vertices: &[[f32; 2]],
+            colors: &[[f32; 4]],
+            indices: &[u32],
+        ) -> *mut QSGNode;
+    }
+
     impl cxx_qt::Initialize for Gizmo {}
 }
 
@@ -175,15 +193,21 @@ impl ffi::Gizmo {
             },
             ..Default::default()
         };
-        println!("config: {:?}", config);
-        let mut gizmo = transform_gizmo::Gizmo::new(config);
-        let update_result = gizmo.update(
-            transform_gizmo::GizmoInteraction::default(),
-            &[transform_gizmo::math::Transform::default()],
-        );
-        println!("update_result: {:?}", update_result);
+        let gizmo = transform_gizmo::Gizmo::new(config);
+        // let update_result = gizmo.update(
+        //     transform_gizmo::GizmoInteraction::default(),
+        //     &[transform_gizmo::math::Transform::default()],
+        // );
+        // println!("update_result: {:?}", update_result);
         let draw_data = gizmo.draw();
-        println!("draw_data: {:?}", draw_data);
-        old_node
+
+        unsafe {
+            ffi::gizmo_update_paint_node(
+                old_node,
+                &draw_data.vertices,
+                &draw_data.colors,
+                &draw_data.indices,
+            )
+        }
     }
 }

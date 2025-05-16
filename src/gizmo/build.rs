@@ -12,7 +12,10 @@ fn main() {
         })
         .cc_builder(|cc| {
             cc.include("./cpp");
-            // cc.file("./cpp/gizmo.cpp");
+            cc.file("./cpp/gizmo.cpp");
+
+            println!("cargo:rerun-if-changed=./cpp/gizmo.h");
+            println!("cargo:rerun-if-changed=./cpp/gizmo.cpp");
         })
         .build();
 }

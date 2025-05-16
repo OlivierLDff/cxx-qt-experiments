@@ -1,0 +1,75 @@
+// SPDX-FileCopyrightText: Olivier Le Doeuff <olivier.ldff@gmail.com>
+// SPDX-License-Identifier: MIT
+
+#include <QtCore/QSizeF>
+#include <QtCore/QPointF>
+#include <QtQuick/QQuickItem>
+#include <QtQuick/QSGGeometryNode>
+#include <QtQuick/QSGGeometry>
+#include <QtQuick/QSGVertexColorMaterial>
+#include <QtQuick/QSGNode>
+#include <cstring>
+
+#include "gizmo.h"
+
+QSGNode *gizmo_update_paint_node(QSGNode *oldNode,
+                                 rust::Slice<std::array<float, 2> const> vertices,
+                                 rust::Slice<std::array<float, 4> const> colors,
+                                 rust::Slice<std::uint32_t const> indices)
+{
+    assert(vertices.size() == colors.size());
+    for (const auto &idx : indices)
+    {
+        assert(idx < vertices.size());
+    }
+
+    QSGGeometryNode *node = nullptr;
+    QSGGeometry *geometry = nullptr;
+
+    if (!oldNode)
+    {
+        node = new QSGGeometryNode;
+        geometry = new QSGGeometry(QSGGeometry::defaultAttributes_ColoredPoint2D(), vertices.size(), indices.size(), QSGGeometry::UnsignedIntType);
+        geometry->setDrawingMode(QSGGeometry::DrawTriangles);
+        // geometry->setDrawingMode(QSGGeometry::DrawPoints);
+        node->setGeometry(geometry);
+        node->setFlag(QSGNode::OwnsGeometry);
+        auto *material = new QSGVertexColorMaterial;
+        // material->setColor(QColor(255, 0, 0));
+        node->setMaterial(material);
+        node->setFlag(QSGNode::OwnsMaterial);
+    }
+    else
+    {
+        node = static_cast<QSGGeometryNode *>(oldNode);
+        geometry = node->geometry();
+        geometry->allocate(vertices.size(), indices.size());
+    }
+
+    assert(geometry != nullptr);
+
+    QSGGeometry::ColoredPoint2D *vertex_data = geometry->vertexDataAsColoredPoint2D();
+    assert(vertex_data != nullptr);
+    for (std::size_t i = 0; i < vertices.size(); ++i)
+    {
+        const auto &v = vertices[i];
+        const auto &c = colors[i];
+        const auto x = v[0];
+        const auto y = v[1];
+        const auto red = static_cast<uchar>(c[0] * 255.f);
+        const auto green = static_cast<uchar>(c[1] * 255.f);
+        const auto blue = static_cast<uchar>(c[2] * 255.f);
+        const auto alpha = static_cast<uchar>(c[3] * 255.f);
+        vertex_data[i].set(x, y, red, green, blue, alpha);
+    }
+
+    uint *index_data = geometry->indexDataAsUInt();
+    for (std::size_t i = 0; i < indices.size(); ++i)
+    {
+        index_data[i] = indices[i];
+        assert(index_data[i] < vertices.size());
+    }
+
+    node->markDirty(QSGNode::DirtyGeometry);
+    return node;
+}
