@@ -304,7 +304,7 @@ impl ffi::Gizmo {
         // This case can happen if the camera is updated for example
         if !self.rust().gizmo_updated_since_last_draw && self.rust().gizmo.is_some() {
             self.as_mut()
-                .update_interaction(QPointF::new(0.0, 0.0), false, false, false);
+                .update_interaction_impl(QPointF::new(0.0, 0.0), false, false, false);
         }
         self.as_mut().rust_mut().gizmo_updated_since_last_draw = false;
 
