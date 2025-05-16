@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: MIT
 
 use core::pin::Pin;
-use std::slice::Windows;
 
 use cxx_qt::CxxQtType;
 use cxx_qt_lib::{QVector3D, QVector4D};
@@ -194,11 +193,6 @@ impl ffi::Gizmo {
             ..Default::default()
         };
         let gizmo = transform_gizmo::Gizmo::new(config);
-        // let update_result = gizmo.update(
-        //     transform_gizmo::GizmoInteraction::default(),
-        //     &[transform_gizmo::math::Transform::default()],
-        // );
-        // println!("update_result: {:?}", update_result);
         let draw_data = gizmo.draw();
 
         unsafe {
