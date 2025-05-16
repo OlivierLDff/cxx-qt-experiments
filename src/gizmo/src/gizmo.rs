@@ -215,8 +215,24 @@ impl cxx_qt::Initialize for ffi::Gizmo {
 
 impl ffi::Gizmo {
     fn update_interaction(
-        self: Pin<&mut Self>,
+        mut self: Pin<&mut Self>,
         cursor_position: QPointF,
+        hovered: bool,
+        drag_started: bool,
+        dragging: bool,
+    ) {
+        self.as_mut().update();
+        self.as_mut().update_interaction_impl(
+            (cursor_position.x() as f32, cursor_position.y() as f32),
+            hovered,
+            drag_started,
+            dragging,
+        );
+    }
+
+    fn update_interaction_impl(
+        self: Pin<&mut Self>,
+        cursor_pos: (f32, f32),
         hovered: bool,
         drag_started: bool,
         dragging: bool,
@@ -225,7 +241,7 @@ impl ffi::Gizmo {
             qobject.as_mut().rust_mut().gizmo_updated_since_last_draw = true;
             let result = gizmo.update(
                 transform_gizmo::GizmoInteraction {
-                    cursor_pos: ((cursor_position.x() as f32, cursor_position.y() as f32)),
+                    cursor_pos,
                     hovered,
                     drag_started,
                     dragging,
@@ -284,8 +300,9 @@ impl ffi::Gizmo {
         old_node: *mut QSGNode,
         _update_paint_node_data: *mut QQuickItemUpdatePaintNodeData,
     ) -> *mut QSGNode {
+        // transform_gizmo::Gizmo expect a call to `update` before a subsequent call to `draw`
+        // This case can happen if the camera is updated for example
         if !self.rust().gizmo_updated_since_last_draw && self.rust().gizmo.is_some() {
-            println!("Gizmo updated since last draw");
             self.as_mut()
                 .update_interaction(QPointF::new(0.0, 0.0), false, false, false);
         }
@@ -293,8 +310,6 @@ impl ffi::Gizmo {
 
         self.with_gizmo(|_, gizmo| unsafe {
             let draw_data = gizmo.draw();
-
-            println!("Drawing gizmo with {} vertices", draw_data.vertices.len());
 
             ffi::gizmo_update_paint_node(
                 old_node,

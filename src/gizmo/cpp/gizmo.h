@@ -113,7 +113,6 @@ private:
     void callUpdateInteraction(QPointF position, bool dragStarted = false)
     {
         updateInteraction(position, _hovering || _dragging, dragStarted, _dragging);
-        update();
     }
 };
 
