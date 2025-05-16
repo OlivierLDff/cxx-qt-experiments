@@ -31,6 +31,7 @@ protected:
         {
             event->accept();
             _hovering = true;
+            qDebug() << "hoverEnterEvent";
             callUpdateInteraction(event->position());
         }
     }
@@ -43,6 +44,7 @@ protected:
         {
             event->accept();
             _hovering = false;
+            qDebug() << "hoverLeaveEvent";
             callUpdateInteraction(event->position());
         }
     }
@@ -55,12 +57,14 @@ protected:
         {
             event->accept();
             _hovering = true;
+            qDebug() << "hoverMoveEvent";
             callUpdateInteraction(event->position());
         }
         else if (_hovering)
         {
             event->accept();
             _hovering = false;
+            qDebug() << "hoverMoveEvent";
             callUpdateInteraction(event->position());
         }
     }
@@ -74,6 +78,7 @@ protected:
             event->accept();
 
             _dragging = true;
+            qDebug() << "mousePressEvent";
             callUpdateInteraction(event->position(), true);
             setKeepMouseGrab(true);
         }
@@ -86,6 +91,7 @@ protected:
             return;
         }
 
+        qDebug() << "mouseReleaseEvent";
         event->accept();
         _dragging = false;
         callUpdateInteraction(event->position());
@@ -99,6 +105,7 @@ protected:
             return;
         }
 
+        qDebug() << "mouseMoveEvent";
         event->accept();
         callUpdateInteraction(event->position());
     }

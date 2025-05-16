@@ -107,6 +107,15 @@ pub mod ffi {
             old_node: *mut QSGNode,
             update_paint_node_data: *mut QQuickItemUpdatePaintNodeData,
         ) -> *mut QSGNode;
+
+        #[qsignal]
+        #[cxx_name = "transformUpdated"]
+        fn transform_updated(
+            self: Pin<&mut Gizmo>,
+            position: QVector3D,
+            rotation: QVector4D,
+            scale: QVector3D,
+        );
     }
 
     unsafe extern "C++" {
@@ -160,24 +169,7 @@ impl GizmoRust {
             self.camera_position.z(),
         );
 
-        let camera_transform = glam::Mat4::from_rotation_translation(rotation, translation);
-
-        let target_rotation = glam::Quat::from_xyzw(
-            self.target_rotation.x(),
-            self.target_rotation.y(),
-            self.target_rotation.z(),
-            self.target_rotation.w(),
-        );
-        let target_translation = glam::Vec3::new(
-            self.target_position.x(),
-            self.target_position.y(),
-            self.target_position.z(),
-        );
-
-        let target_transform =
-            glam::Mat4::from_rotation_translation(target_rotation, target_translation);
-
-        camera_transform.inverse() * target_transform
+        glam::Mat4::from_rotation_translation(rotation, translation).inverse()
     }
 
     fn projection_matrix(&self, width: f32, height: f32) -> glam::Mat4 {
@@ -237,6 +229,28 @@ impl ffi::Gizmo {
         drag_started: bool,
         dragging: bool,
     ) {
+        let transform = transform_gizmo::math::Transform::from_scale_rotation_translation(
+            glam::Vec3::new(
+                self.target_scale.x(),
+                self.target_scale.y(),
+                self.target_scale.z(),
+            )
+            .as_dvec3(),
+            glam::Quat::from_xyzw(
+                self.target_rotation.x(),
+                self.target_rotation.y(),
+                self.target_rotation.z(),
+                self.target_rotation.w(),
+            )
+            .as_dquat(),
+            glam::Vec3::new(
+                self.target_position.x(),
+                self.target_position.y(),
+                self.target_position.z(),
+            )
+            .as_dvec3(),
+        );
+
         self.with_gizmo(|mut qobject, gizmo| {
             qobject.as_mut().rust_mut().gizmo_updated_since_last_draw = true;
             let result = gizmo.update(
@@ -246,8 +260,30 @@ impl ffi::Gizmo {
                     drag_started,
                     dragging,
                 },
-                &[],
+                &[transform],
             );
+
+            if let Some((_, transforms)) = result {
+                let transform = transforms.first().unwrap();
+                qobject.as_mut().transform_updated(
+                    QVector3D::new(
+                        transform.translation.x as f32,
+                        transform.translation.y as f32,
+                        transform.translation.z as f32,
+                    ),
+                    QVector4D::new(
+                        transform.rotation.v.x as f32,
+                        transform.rotation.v.y as f32,
+                        transform.rotation.v.z as f32,
+                        transform.rotation.s as f32,
+                    ),
+                    QVector3D::new(
+                        transform.scale.x as f32,
+                        transform.scale.y as f32,
+                        transform.scale.z as f32,
+                    ),
+                );
+            }
         })
     }
 
@@ -302,9 +338,9 @@ impl ffi::Gizmo {
     ) -> *mut QSGNode {
         // transform_gizmo::Gizmo expect a call to `update` before a subsequent call to `draw`
         // This case can happen if the camera is updated for example
-        if !self.rust().gizmo_updated_since_last_draw && self.rust().gizmo.is_some() {
+        if !self.rust().gizmo_updated_since_last_draw {
             self.as_mut()
-                .update_interaction_impl(QPointF::new(0.0, 0.0), false, false, false);
+                .update_interaction_impl((0.0, 0.0), false, false, false);
         }
         self.as_mut().rust_mut().gizmo_updated_since_last_draw = false;
 

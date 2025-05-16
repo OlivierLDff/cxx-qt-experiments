@@ -52,6 +52,22 @@ Window {
                     baseColor: "green"
                 }
             ]
+
+            SequentialAnimation on y {
+        loops: Animation.Infinite
+        NumberAnimation {
+            duration: 3000
+            to: -150
+            from: 150
+            easing.type:Easing.InQuad
+        }
+        NumberAnimation {
+            duration: 3000
+            to: 150
+            from: -150
+            easing.type:Easing.OutQuad
+        }
+    }
         }
         AxisHelper {
         }
@@ -76,6 +92,18 @@ Window {
 
         targetPosition: cube2.position
         targetRotation: cube2.rotation.toVector4d()
+        targetScale: cube2.scale
+
+        onTransformUpdated: function(newPosition: vector3d, newRotation: vector4d, newScale: vector3d) {
+            cube2.position = newPosition
+            // NOTE: quaternion expect the scalar part first
+            cube2.rotation = Qt.quaternion(newRotation.w,
+                                           newRotation.x,
+                                           newRotation.y,
+                                           newRotation.z,
+                                           )
+            cube2.scale = newScale
+        }
     }
 
     DebugView {
