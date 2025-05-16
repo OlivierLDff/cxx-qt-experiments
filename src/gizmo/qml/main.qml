@@ -67,6 +67,9 @@ Window {
         cameraVerticalFoV: camera.fieldOfView
         cameraNearPlane: camera.clipNear
         cameraFarPlane: camera.clipFar
+
+        targetPosition: cube2.position
+        targetRotation: cube2.rotation.toVector4d()
     }
 
     WasdController {

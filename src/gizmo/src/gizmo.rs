@@ -67,6 +67,9 @@ pub mod ffi {
         #[qproperty(f32, cameraVerticalFoV, rust_name = "camera_vertical_fov")]
         #[qproperty(f32, cameraNearPlane, rust_name = "camera_near_plane")]
         #[qproperty(f32, cameraFarPlane, rust_name = "camera_far_plane")]
+        #[qproperty(QVector3D, targetPosition, rust_name = "target_position")]
+        #[qproperty(QVector4D, targetRotation, rust_name = "target_rotation")]
+        #[qproperty(QVector3D, targetScale, rust_name = "target_scale")]
         type Gizmo = super::GizmoRust;
 
         #[inherit]
@@ -116,6 +119,9 @@ pub struct GizmoRust {
     camera_vertical_fov: f32,
     camera_near_plane: f32,
     camera_far_plane: f32,
+    target_position: QVector3D,
+    target_rotation: QVector4D,
+    target_scale: QVector3D,
     gizmo: Option<transform_gizmo::Gizmo>,
 }
 
@@ -133,7 +139,24 @@ impl GizmoRust {
             self.camera_position.z(),
         );
 
-        glam::Mat4::from_rotation_translation(rotation, translation).inverse()
+        let camera_transform = glam::Mat4::from_rotation_translation(rotation, translation);
+
+        let target_rotation = glam::Quat::from_xyzw(
+            self.target_rotation.x(),
+            self.target_rotation.y(),
+            self.target_rotation.z(),
+            self.target_rotation.w(),
+        );
+        let target_translation = glam::Vec3::new(
+            self.target_position.x(),
+            self.target_position.y(),
+            self.target_position.z(),
+        );
+
+        let target_transform =
+            glam::Mat4::from_rotation_translation(target_rotation, target_translation);
+
+        camera_transform.inverse() * target_transform
     }
 
     fn projection_matrix(&self, width: f32, height: f32) -> glam::Mat4 {
