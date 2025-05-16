@@ -17,5 +17,6 @@ fn main() {
             println!("cargo:rerun-if-changed=./cpp/gizmo.h");
             println!("cargo:rerun-if-changed=./cpp/gizmo.cpp");
         })
+        .qobject_header("./cpp/gizmo.h")
         .build();
 }

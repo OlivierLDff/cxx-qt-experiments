@@ -57,6 +57,12 @@ Window {
         }
     }
 
+    WasdController {
+        controlledObject: camera
+    }
+
+    // NOTE: order matters, gizmo must first receive mouse events before the
+    //       camera controller
     Gizmo {
         id: gizmo
 
@@ -70,10 +76,6 @@ Window {
 
         targetPosition: cube2.position
         targetRotation: cube2.rotation.toVector4d()
-    }
-
-    WasdController {
-        controlledObject: camera
     }
 
     DebugView {

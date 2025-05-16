@@ -4,7 +4,7 @@
 use core::pin::Pin;
 
 use cxx_qt::CxxQtType;
-use cxx_qt_lib::{QVector3D, QVector4D};
+use cxx_qt_lib::{QPointF, QVector3D, QVector4D};
 use ffi::{QQuickItemFlag, QQuickItemUpdatePaintNodeData, QSGNode};
 
 #[cxx_qt::bridge]
@@ -40,6 +40,9 @@ pub mod ffi {
     }
 
     unsafe extern "C++" {
+        include!("cxx-qt-lib/qpointf.h");
+        type QPointF = cxx_qt_lib::QPointF;
+
         include!("cxx-qt-lib/qsizef.h");
         type QSizeF = cxx_qt_lib::QSizeF;
 
@@ -51,6 +54,7 @@ pub mod ffi {
 
         include!(<QtQuick/QQuickItem>);
         type QQuickItem;
+
     }
 
     unsafe extern "C++" {
@@ -61,7 +65,7 @@ pub mod ffi {
     unsafe extern "RustQt" {
         #[qobject]
         #[qml_element]
-        #[base = QQuickItem]
+        #[base = GizmoInteractionItem]
         #[qproperty(QVector3D, cameraPosition, rust_name = "camera_position")]
         #[qproperty(QVector4D, cameraRotation, rust_name = "camera_rotation")]
         #[qproperty(f32, cameraVerticalFoV, rust_name = "camera_vertical_fov")]
@@ -83,6 +87,20 @@ pub mod ffi {
         fn size(self: &Gizmo) -> QSizeF;
 
         #[cxx_override]
+        #[cxx_name = "updateInteraction"]
+        fn update_interaction(
+            self: Pin<&mut Gizmo>,
+            cursor_position: QPointF,
+            hovered: bool,
+            drag_started: bool,
+            dragging: bool,
+        );
+
+        #[cxx_override]
+        #[cxx_name = "pickPreview"]
+        fn pick_preview(self: Pin<&mut Gizmo>, cursor_position: QPointF) -> bool;
+
+        #[cxx_override]
         #[cxx_name = "updatePaintNode"]
         unsafe fn update_paint_node(
             self: Pin<&mut Gizmo>,
@@ -93,6 +111,8 @@ pub mod ffi {
 
     unsafe extern "C++" {
         include!("gizmo.h");
+
+        type GizmoInteractionItem;
 
         /// cpp implementation of the update_paint_node function
         ///
@@ -123,6 +143,7 @@ pub struct GizmoRust {
     target_rotation: QVector4D,
     target_scale: QVector3D,
     gizmo: Option<transform_gizmo::Gizmo>,
+    gizmo_updated_since_last_draw: bool,
 }
 
 impl GizmoRust {
@@ -193,17 +214,58 @@ impl cxx_qt::Initialize for ffi::Gizmo {
 }
 
 impl ffi::Gizmo {
-    unsafe fn update_paint_node(
+    fn update_interaction(
         self: Pin<&mut Self>,
-        old_node: *mut QSGNode,
-        _update_paint_node_data: *mut QQuickItemUpdatePaintNodeData,
-    ) -> *mut QSGNode {
+        cursor_position: QPointF,
+        hovered: bool,
+        drag_started: bool,
+        dragging: bool,
+    ) {
+        self.with_gizmo(|mut qobject, gizmo| {
+            qobject.as_mut().rust_mut().gizmo_updated_since_last_draw = true;
+            let result = gizmo.update(
+                transform_gizmo::GizmoInteraction {
+                    cursor_pos: ((cursor_position.x() as f32, cursor_position.y() as f32)),
+                    hovered,
+                    drag_started,
+                    dragging,
+                },
+                &[],
+            );
+        })
+    }
+
+    fn pick_preview(self: Pin<&mut Self>, cursor_position: QPointF) -> bool {
+        self.with_gizmo(|_, gizmo| {
+            gizmo.pick_preview((cursor_position.x() as f32, cursor_position.y() as f32))
+        })
+    }
+
+    fn with_gizmo<T>(
+        mut self: Pin<&mut Self>,
+        f: impl FnOnce(Pin<&mut Self>, &mut transform_gizmo::Gizmo) -> T,
+    ) -> T {
+        let config = self.as_ref().gizmo_config();
+        let mut gizmo = match self.as_mut().rust_mut().gizmo.take() {
+            Some(mut gizmo) => {
+                gizmo.update_config(config);
+                gizmo
+            }
+            None => transform_gizmo::Gizmo::new(config),
+        };
+        let result = f(self.as_mut(), &mut gizmo);
+        self.rust_mut().gizmo = Some(gizmo);
+        result
+    }
+
+    fn gizmo_config(&self) -> transform_gizmo::GizmoConfig {
         let view_matrix = self.rust().view_matrix();
         let size = self.size();
         let width = size.width() as f32;
         let height = size.height() as f32;
         let projection_matrix = self.rust().projection_matrix(width, height);
-        let config = transform_gizmo::GizmoConfig {
+
+        transform_gizmo::GizmoConfig {
             view_matrix: view_matrix.as_dmat4().into(),
             projection_matrix: projection_matrix.as_dmat4().into(),
             viewport: transform_gizmo::Rect {
@@ -214,17 +276,32 @@ impl ffi::Gizmo {
                 },
             },
             ..Default::default()
-        };
-        let gizmo = transform_gizmo::Gizmo::new(config);
-        let draw_data = gizmo.draw();
+        }
+    }
 
-        unsafe {
+    unsafe fn update_paint_node(
+        mut self: Pin<&mut Self>,
+        old_node: *mut QSGNode,
+        _update_paint_node_data: *mut QQuickItemUpdatePaintNodeData,
+    ) -> *mut QSGNode {
+        if !self.rust().gizmo_updated_since_last_draw && self.rust().gizmo.is_some() {
+            println!("Gizmo updated since last draw");
+            self.as_mut()
+                .update_interaction(QPointF::new(0.0, 0.0), false, false, false);
+        }
+        self.as_mut().rust_mut().gizmo_updated_since_last_draw = false;
+
+        self.with_gizmo(|_, gizmo| unsafe {
+            let draw_data = gizmo.draw();
+
+            println!("Drawing gizmo with {} vertices", draw_data.vertices.len());
+
             ffi::gizmo_update_paint_node(
                 old_node,
                 &draw_data.vertices,
                 &draw_data.colors,
                 &draw_data.indices,
             )
-        }
+        })
     }
 }
