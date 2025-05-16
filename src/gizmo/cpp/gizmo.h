@@ -31,21 +31,25 @@ protected:
         {
             event->accept();
             _hovering = true;
-            qDebug() << "hoverEnterEvent";
             callUpdateInteraction(event->position());
+        }
+        else
+        {
+            event->ignore();
         }
     }
 
     void hoverLeaveEvent(QHoverEvent *event) override
     {
-        // This might be required if an object grab the mouse
-        // _dragging = false;
         if (_hovering)
         {
             event->accept();
             _hovering = false;
-            qDebug() << "hoverLeaveEvent";
             callUpdateInteraction(event->position());
+        }
+        else
+        {
+            event->ignore();
         }
     }
 
@@ -57,15 +61,17 @@ protected:
         {
             event->accept();
             _hovering = true;
-            qDebug() << "hoverMoveEvent";
             callUpdateInteraction(event->position());
         }
         else if (_hovering)
         {
             event->accept();
             _hovering = false;
-            qDebug() << "hoverMoveEvent";
             callUpdateInteraction(event->position());
+        }
+        else
+        {
+            event->ignore();
         }
     }
 
@@ -78,9 +84,12 @@ protected:
             event->accept();
 
             _dragging = true;
-            qDebug() << "mousePressEvent";
             callUpdateInteraction(event->position(), true);
             setKeepMouseGrab(true);
+        }
+        else
+        {
+            event->ignore();
         }
     }
 
@@ -88,10 +97,10 @@ protected:
     {
         if (!_dragging)
         {
+            event->ignore();
             return;
         }
 
-        qDebug() << "mouseReleaseEvent";
         event->accept();
         _dragging = false;
         callUpdateInteraction(event->position());
@@ -102,10 +111,10 @@ protected:
     {
         if (!_dragging)
         {
+            event->ignore();
             return;
         }
 
-        qDebug() << "mouseMoveEvent";
         event->accept();
         callUpdateInteraction(event->position());
     }

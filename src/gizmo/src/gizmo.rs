@@ -153,6 +153,8 @@ pub struct GizmoRust {
     target_scale: QVector3D,
     gizmo: Option<transform_gizmo::Gizmo>,
     gizmo_updated_since_last_draw: bool,
+    /// Keep last interaction in case the target moves while we are dragging
+    gizmo_last_interaction: Option<transform_gizmo::GizmoInteraction>,
 }
 
 impl GizmoRust {
@@ -202,6 +204,22 @@ impl cxx_qt::Initialize for ffi::Gizmo {
         self.as_mut()
             .on_camera_rotation_changed(|qobject| qobject.update())
             .release();
+
+        self.as_mut()
+            .on_target_position_changed(|qobject| {
+                qobject.update();
+            })
+            .release();
+        self.as_mut()
+            .on_target_rotation_changed(|qobject| {
+                qobject.update();
+            })
+            .release();
+        self.as_mut()
+            .on_target_scale_changed(|qobject| {
+                qobject.update();
+            })
+            .release();
     }
 }
 
@@ -214,20 +232,22 @@ impl ffi::Gizmo {
         dragging: bool,
     ) {
         self.as_mut().update();
-        self.as_mut().update_interaction_impl(
-            (cursor_position.x() as f32, cursor_position.y() as f32),
+        let interaction = transform_gizmo::GizmoInteraction {
+            cursor_pos: (cursor_position.x() as f32, cursor_position.y() as f32),
             hovered,
             drag_started,
             dragging,
-        );
+        };
+        self.as_mut().update_interaction_impl(interaction);
+        self.as_mut().rust_mut().gizmo_last_interaction = Some(transform_gizmo::GizmoInteraction {
+            drag_started: false,
+            ..interaction
+        });
     }
 
     fn update_interaction_impl(
         self: Pin<&mut Self>,
-        cursor_pos: (f32, f32),
-        hovered: bool,
-        drag_started: bool,
-        dragging: bool,
+        interaction: transform_gizmo::GizmoInteraction,
     ) {
         let transform = transform_gizmo::math::Transform::from_scale_rotation_translation(
             glam::Vec3::new(
@@ -253,38 +273,42 @@ impl ffi::Gizmo {
 
         self.with_gizmo(|mut qobject, gizmo| {
             qobject.as_mut().rust_mut().gizmo_updated_since_last_draw = true;
-            let result = gizmo.update(
-                transform_gizmo::GizmoInteraction {
-                    cursor_pos,
-                    hovered,
-                    drag_started,
-                    dragging,
-                },
-                &[transform],
-            );
+            let result = gizmo.update(interaction, &[transform]);
 
             if let Some((_, transforms)) = result {
                 let transform = transforms.first().unwrap();
-                qobject.as_mut().transform_updated(
-                    QVector3D::new(
-                        transform.translation.x as f32,
-                        transform.translation.y as f32,
-                        transform.translation.z as f32,
-                    ),
-                    QVector4D::new(
-                        transform.rotation.v.x as f32,
-                        transform.rotation.v.y as f32,
-                        transform.rotation.v.z as f32,
-                        transform.rotation.s as f32,
-                    ),
-                    QVector3D::new(
-                        transform.scale.x as f32,
-                        transform.scale.y as f32,
-                        transform.scale.z as f32,
-                    ),
+                let position = QVector3D::new(
+                    transform.translation.x as f32,
+                    transform.translation.y as f32,
+                    transform.translation.z as f32,
                 );
+                let rotation = QVector4D::new(
+                    transform.rotation.v.x as f32,
+                    transform.rotation.v.y as f32,
+                    transform.rotation.v.z as f32,
+                    transform.rotation.s as f32,
+                );
+                let scale = QVector3D::new(
+                    transform.scale.x as f32,
+                    transform.scale.y as f32,
+                    transform.scale.z as f32,
+                );
+
+                // Emit the signal only if the values have changed
+                // Also emitting the signal from update_paint_node result in very bad performance
+                if position != qobject.target_position
+                    || rotation != qobject.target_rotation
+                    || scale != qobject.target_scale
+                {
+                    // Internally update the state, so we don't trigger "onChanged" signals when the
+                    // user updates its values
+                    qobject.as_mut().rust_mut().target_position = position.clone();
+                    qobject.as_mut().rust_mut().target_rotation = rotation.clone();
+                    qobject.as_mut().rust_mut().target_scale = scale.clone();
+                    qobject.transform_updated(position.clone(), rotation.clone(), scale.clone());
+                }
             }
-        })
+        });
     }
 
     fn pick_preview(self: Pin<&mut Self>, cursor_position: QPointF) -> bool {
@@ -339,8 +363,8 @@ impl ffi::Gizmo {
         // transform_gizmo::Gizmo expect a call to `update` before a subsequent call to `draw`
         // This case can happen if the camera is updated for example
         if !self.rust().gizmo_updated_since_last_draw {
-            self.as_mut()
-                .update_interaction_impl((0.0, 0.0), false, false, false);
+            let interaction = self.rust().gizmo_last_interaction.unwrap_or_default();
+            self.as_mut().update_interaction_impl(interaction);
         }
         self.as_mut().rust_mut().gizmo_updated_since_last_draw = false;
 

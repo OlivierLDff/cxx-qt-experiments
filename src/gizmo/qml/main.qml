@@ -1,5 +1,5 @@
-// Copyright (C) 2019 The Qt Company Ltd.
-// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR BSD-3-Clause
+// SPDX-FileCopyrightText: Olivier Le Doeuff <olivier.ldff@gmail.com>
+// SPDX-License-Identifier: MIT
 
 import QtQuick
 import QtQuick3D
@@ -15,6 +15,7 @@ Window {
 
     View3D {
         id: view
+        property Model pickedModel: cube1
         anchors.fill: parent
 
         environment: SceneEnvironment {
@@ -33,10 +34,12 @@ Window {
         }
         Model {
             id: cube1
+            pickable: true
             position: Qt.vector3d(0, 0, 0)
             source: "#Cube"
             scale: Qt.vector3d(1, 1, 1)
-            materials: [ PrincipledMaterial {
+            materials: [
+                PrincipledMaterial {
                     baseColor: "red"
                 }
             ]
@@ -44,43 +47,65 @@ Window {
 
         Model {
             id: cube2
+            pickable: true
             position: Qt.vector3d(300, 50, -200)
             eulerRotation.y: 30
             source: "#Cube"
             scale: Qt.vector3d(1, 1, 1)
-            materials: [ PrincipledMaterial {
+            materials: [
+                PrincipledMaterial {
                     baseColor: "green"
                 }
             ]
 
-            SequentialAnimation on y {
-        loops: Animation.Infinite
-        NumberAnimation {
-            duration: 3000
-            to: -150
-            from: 150
-            easing.type:Easing.InQuad
+            // Showcase external update of target position during hover/dragging of the gizmo
+            // SequentialAnimation on y {
+            //     loops: Animation.Infinite
+            //     NumberAnimation {
+            //         duration: 3000
+            //         to: -150
+            //         from: 150
+            //         easing.type: Easing.InQuad
+            //     }
+            //     PauseAnimation {
+            //         duration: 1000
+            //     }
+            //     NumberAnimation {
+            //         duration: 3000
+            //         to: 150
+            //         from: -150
+            //         easing.type: Easing.OutQuad
+            //     }
+            //     PauseAnimation {
+            //         duration: 1000
+            //     }
+            // }
         }
-        NumberAnimation {
-            duration: 3000
-            to: 150
-            from: -150
-            easing.type:Easing.OutQuad
-        }
-    }
-        }
-        AxisHelper {
-        }
+        AxisHelper {}
     }
 
     WasdController {
         controlledObject: camera
     }
 
+    MouseArea {
+        anchors.fill: parent
+        onClicked: (mouse) => {
+            const result = view.pick(mouse.x, mouse.y);
+            if(result.objectHit !== view.pickedModel) {
+                view.pickedModel = result.objectHit;
+                mouse.accepted = true;
+            }
+            else {
+                mouse.accepted = false;
+            }
+        }
+    }
+
     // NOTE: order matters, gizmo must first receive mouse events before the
     //       camera controller
     Gizmo {
-        id: gizmo
+        visible: view.pickedModel !== null
 
         anchors.fill: parent
 
@@ -90,19 +115,19 @@ Window {
         cameraNearPlane: camera.clipNear
         cameraFarPlane: camera.clipFar
 
-        targetPosition: cube2.position
-        targetRotation: cube2.rotation.toVector4d()
-        targetScale: cube2.scale
+        targetPosition: view.pickedModel ? view.pickedModel.position : Qt.vector3d(0, 0, 0)
+        targetRotation: view.pickedModel ? view.pickedModel.rotation.toVector4d() : Qt.quaternion(0, 0, 0, 1)
+        targetScale: view.pickedModel ? view.pickedModel.scale : Qt.vector3d(1, 1, 1)
 
-        onTransformUpdated: function(newPosition: vector3d, newRotation: vector4d, newScale: vector3d) {
-            cube2.position = newPosition
-            // NOTE: quaternion expect the scalar part first
-            cube2.rotation = Qt.quaternion(newRotation.w,
-                                           newRotation.x,
-                                           newRotation.y,
-                                           newRotation.z,
-                                           )
-            cube2.scale = newScale
+        onTransformUpdated: (newPosition, newRotation, newScale) => {
+            if(view.pickedModel === null) {
+                return;
+            }
+
+            view.pickedModel.position = newPosition;
+            // IMPORTANT: quaternion expect the scalar part first in qt's api
+            view.pickedModel.rotation = Qt.quaternion(newRotation.w, newRotation.x, newRotation.y, newRotation.z);
+            view.pickedModel.scale = newScale;
         }
     }
 
