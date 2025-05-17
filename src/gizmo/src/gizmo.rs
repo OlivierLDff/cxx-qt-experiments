@@ -6,7 +6,8 @@ use core::pin::Pin;
 use cxx_qt::CxxQtType;
 use cxx_qt_lib::{QPointF, QVector3D, QVector4D};
 use ffi::{
-    GizmoOrientation, QQuickItemFlag, QQuickItemUpdatePaintNodeData, QSGNode, TransformPivotPoint,
+    GizmoModeOverride, GizmoOrientation, QQuickItemFlag, QQuickItemUpdatePaintNodeData, QSGNode,
+    TransformPivotPoint,
 };
 
 #[cxx_qt::bridge]
@@ -82,6 +83,47 @@ pub mod ffi {
         Local,
     }
 
+    #[qenum(Gizmo)]
+    enum GizmoModeOverride {
+        NoOverride,
+        /// Rotate around the view forward axis
+        RotateView,
+        /// Rotate around the X axis
+        RotateX,
+        /// Rotate around the Y axis
+        RotateY,
+        /// Rotate around the Z axis
+        RotateZ,
+        /// Translate along the view forward axis
+        TranslateView,
+        /// Translate along the X axis
+        TranslateX,
+        /// Translate along the Y axis
+        TranslateY,
+        /// Translate along the Z axis
+        TranslateZ,
+        /// Translate along the XY plane
+        TranslateXY,
+        /// Translate along the XZ plane
+        TranslateXZ,
+        /// Translate along the YZ plane
+        TranslateYZ,
+        /// Scale uniformly in all directions
+        ScaleUniform,
+        /// Scale along the X axis
+        ScaleX,
+        /// Scale along the Y axis
+        ScaleY,
+        /// Scale along the Z axis
+        ScaleZ,
+        /// Scale along the XY plane
+        ScaleXY,
+        /// Scale along the XZ plane
+        ScaleXZ,
+        /// Scale along the YZ plane
+        ScaleYZ,
+    }
+
     unsafe extern "RustQt" {
         #[qobject]
         #[qml_element]
@@ -109,6 +151,7 @@ pub mod ffi {
         #[qproperty(bool, scaleEnabled, rust_name = "scale_enabled")]
         #[qproperty(bool, scaleUniformEnabled, rust_name = "scale_uniform_enabled")]
         #[qproperty(bool, scalePlaneEnabled, rust_name = "scale_plane_enabled")]
+        #[qproperty(GizmoModeOverride, modeOverride, rust_name = "mode_override")]
         type Gizmo = super::GizmoRust;
 
         #[inherit]
@@ -216,6 +259,38 @@ impl From<TransformPivotPoint> for transform_gizmo::config::TransformPivotPoint 
     }
 }
 
+impl Default for GizmoModeOverride {
+    fn default() -> Self {
+        Self::NoOverride
+    }
+}
+
+impl From<GizmoModeOverride> for Option<transform_gizmo::GizmoMode> {
+    fn from(value: GizmoModeOverride) -> Self {
+        match value {
+            GizmoModeOverride::RotateView => Some(transform_gizmo::GizmoMode::RotateView),
+            GizmoModeOverride::RotateX => Some(transform_gizmo::GizmoMode::RotateX),
+            GizmoModeOverride::RotateY => Some(transform_gizmo::GizmoMode::RotateY),
+            GizmoModeOverride::RotateZ => Some(transform_gizmo::GizmoMode::RotateZ),
+            GizmoModeOverride::TranslateView => Some(transform_gizmo::GizmoMode::TranslateView),
+            GizmoModeOverride::TranslateX => Some(transform_gizmo::GizmoMode::TranslateX),
+            GizmoModeOverride::TranslateY => Some(transform_gizmo::GizmoMode::TranslateY),
+            GizmoModeOverride::TranslateZ => Some(transform_gizmo::GizmoMode::TranslateZ),
+            GizmoModeOverride::TranslateXY => Some(transform_gizmo::GizmoMode::TranslateXY),
+            GizmoModeOverride::TranslateXZ => Some(transform_gizmo::GizmoMode::TranslateXZ),
+            GizmoModeOverride::TranslateYZ => Some(transform_gizmo::GizmoMode::TranslateYZ),
+            GizmoModeOverride::ScaleUniform => Some(transform_gizmo::GizmoMode::ScaleUniform),
+            GizmoModeOverride::ScaleX => Some(transform_gizmo::GizmoMode::ScaleX),
+            GizmoModeOverride::ScaleY => Some(transform_gizmo::GizmoMode::ScaleY),
+            GizmoModeOverride::ScaleZ => Some(transform_gizmo::GizmoMode::ScaleZ),
+            GizmoModeOverride::ScaleXY => Some(transform_gizmo::GizmoMode::ScaleXY),
+            GizmoModeOverride::ScaleXZ => Some(transform_gizmo::GizmoMode::ScaleXZ),
+            GizmoModeOverride::ScaleYZ => Some(transform_gizmo::GizmoMode::ScaleYZ),
+            _ => None,
+        }
+    }
+}
+
 #[derive(Default)]
 pub struct GizmoRust {
     camera_position: QVector3D,
@@ -252,6 +327,7 @@ pub struct GizmoRust {
     scale_enabled: bool,
     scale_uniform_enabled: bool,
     scale_plane_enabled: bool,
+    mode_override: GizmoModeOverride,
 }
 
 impl GizmoRust {
@@ -344,6 +420,10 @@ impl cxx_qt::Initialize for ffi::Gizmo {
             .release();
         self.as_mut()
             .on_scale_uniform_enabled_changed(|qobject| qobject.update())
+            .release();
+
+        self.as_mut()
+            .on_mode_override_changed(|qobject| qobject.update())
             .release();
 
         self.as_mut()
@@ -541,6 +621,7 @@ impl ffi::Gizmo {
             }
             modes
         };
+        let mode_override = this.mode_override.into();
 
         transform_gizmo::GizmoConfig {
             view_matrix: view_matrix.as_dmat4().into(),
@@ -553,6 +634,7 @@ impl ffi::Gizmo {
                 },
             },
             modes,
+            mode_override,
             orientation,
             pivot_point,
             snapping,
