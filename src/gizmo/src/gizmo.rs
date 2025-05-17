@@ -101,6 +101,14 @@ pub mod ffi {
         #[qproperty(f32, snapDistance, rust_name = "snap_distance")]
         #[qproperty(f32, snapScale, rust_name = "snap_scale")]
         #[qproperty(f32, pixelsPerPoint, rust_name = "pixels_per_point")]
+        #[qproperty(bool, translateEnabled, rust_name = "translate_enabled")]
+        #[qproperty(bool, translateViewEnabled, rust_name = "translate_view_enabled")]
+        #[qproperty(bool, translatePlaneEnabled, rust_name = "translate_plane_enabled")]
+        #[qproperty(bool, rotateEnabled, rust_name = "rotate_enabled")]
+        #[qproperty(bool, rotateViewEnabled, rust_name = "rotate_view_enabled")]
+        #[qproperty(bool, scaleEnabled, rust_name = "scale_enabled")]
+        #[qproperty(bool, scaleUniformEnabled, rust_name = "scale_uniform_enabled")]
+        #[qproperty(bool, scalePlaneEnabled, rust_name = "scale_plane_enabled")]
         type Gizmo = super::GizmoRust;
 
         #[inherit]
@@ -236,6 +244,14 @@ pub struct GizmoRust {
     snap_scale: f32,
     /// Ratio of window's physical size to logical size.
     pixels_per_point: f32,
+    translate_enabled: bool,
+    translate_view_enabled: bool,
+    translate_plane_enabled: bool,
+    rotate_enabled: bool,
+    rotate_view_enabled: bool,
+    scale_enabled: bool,
+    scale_uniform_enabled: bool,
+    scale_plane_enabled: bool,
 }
 
 impl GizmoRust {
@@ -273,6 +289,15 @@ impl cxx_qt::Initialize for ffi::Gizmo {
             this.snap_distance = transform_gizmo::config::DEFAULT_SNAP_DISTANCE;
             this.snap_scale = transform_gizmo::config::DEFAULT_SNAP_SCALE;
             this.pixels_per_point = 1.;
+
+            this.translate_enabled = true;
+            this.translate_plane_enabled = true;
+            this.translate_view_enabled = true;
+            this.rotate_enabled = true;
+            this.rotate_view_enabled = true;
+            this.scale_enabled = true;
+            this.scale_plane_enabled = true;
+            this.scale_uniform_enabled = true;
         }
 
         self.as_mut()
@@ -295,23 +320,44 @@ impl cxx_qt::Initialize for ffi::Gizmo {
             .release();
 
         self.as_mut()
+            .on_translate_enabled_changed(|qobject| qobject.update())
+            .release();
+        self.as_mut()
+            .on_translate_plane_enabled_changed(|qobject| qobject.update())
+            .release();
+        self.as_mut()
+            .on_translate_view_enabled_changed(|qobject| qobject.update())
+            .release();
+
+        self.as_mut()
+            .on_rotate_enabled_changed(|qobject| qobject.update())
+            .release();
+        self.as_mut()
+            .on_rotate_view_enabled_changed(|qobject| qobject.update())
+            .release();
+
+        self.as_mut()
+            .on_scale_enabled_changed(|qobject| qobject.update())
+            .release();
+        self.as_mut()
+            .on_scale_plane_enabled_changed(|qobject| qobject.update())
+            .release();
+        self.as_mut()
+            .on_scale_uniform_enabled_changed(|qobject| qobject.update())
+            .release();
+
+        self.as_mut()
             .on_orientation_changed(|qobject| qobject.update())
             .release();
 
         self.as_mut()
-            .on_target_position_changed(|qobject| {
-                qobject.update();
-            })
+            .on_target_position_changed(|qobject| qobject.update())
             .release();
         self.as_mut()
-            .on_target_rotation_changed(|qobject| {
-                qobject.update();
-            })
+            .on_target_rotation_changed(|qobject| qobject.update())
             .release();
         self.as_mut()
-            .on_target_scale_changed(|qobject| {
-                qobject.update();
-            })
+            .on_target_scale_changed(|qobject| qobject.update())
             .release();
     }
 }
@@ -457,6 +503,44 @@ impl ffi::Gizmo {
         } else {
             1.0
         };
+        let modes = {
+            let mut modes = transform_gizmo::EnumSet::<transform_gizmo::GizmoMode>::new();
+            if this.translate_enabled {
+                modes.insert(transform_gizmo::GizmoMode::TranslateX);
+                modes.insert(transform_gizmo::GizmoMode::TranslateY);
+                modes.insert(transform_gizmo::GizmoMode::TranslateZ);
+            }
+            if this.translate_plane_enabled {
+                modes.insert(transform_gizmo::GizmoMode::TranslateXY);
+                modes.insert(transform_gizmo::GizmoMode::TranslateXZ);
+                modes.insert(transform_gizmo::GizmoMode::TranslateYZ);
+            }
+            if this.translate_view_enabled {
+                modes.insert(transform_gizmo::GizmoMode::TranslateView);
+            }
+            if this.rotate_enabled {
+                modes.insert(transform_gizmo::GizmoMode::RotateX);
+                modes.insert(transform_gizmo::GizmoMode::RotateY);
+                modes.insert(transform_gizmo::GizmoMode::RotateZ);
+            }
+            if this.rotate_view_enabled {
+                modes.insert(transform_gizmo::GizmoMode::RotateView);
+            }
+            if this.scale_enabled {
+                modes.insert(transform_gizmo::GizmoMode::ScaleX);
+                modes.insert(transform_gizmo::GizmoMode::ScaleY);
+                modes.insert(transform_gizmo::GizmoMode::ScaleZ);
+            }
+            if this.scale_plane_enabled {
+                modes.insert(transform_gizmo::GizmoMode::ScaleXY);
+                modes.insert(transform_gizmo::GizmoMode::ScaleXZ);
+                modes.insert(transform_gizmo::GizmoMode::ScaleYZ);
+            }
+            if this.scale_uniform_enabled {
+                modes.insert(transform_gizmo::GizmoMode::ScaleUniform);
+            }
+            modes
+        };
 
         transform_gizmo::GizmoConfig {
             view_matrix: view_matrix.as_dmat4().into(),
@@ -468,6 +552,7 @@ impl ffi::Gizmo {
                     y: height,
                 },
             },
+            modes,
             orientation,
             pivot_point,
             snapping,

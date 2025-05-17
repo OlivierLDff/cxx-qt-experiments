@@ -117,6 +117,17 @@ Window {
         cameraNearPlane: camera.clipNear
         cameraFarPlane: camera.clipFar
 
+        translateEnabled: translateCb.checked
+        translatePlaneEnabled: translatePlaneCb.checked
+        translateViewEnabled: translateViewCb.checked
+
+        rotateEnabled: rotateCb.checked
+        rotateViewEnabled: rotateViewCb.checked
+
+        scaleEnabled: scaleCb.checked
+        scalePlaneEnabled: scalePlaneCb.checked
+        scaleUniformEnabled: scaleUniformCb.checked
+
         orientation: localGizmo.checked ? Gizmo.Local : Gizmo.Global
         pivotPoint: pivotIndividualOrigin.checked ? Gizmo.MedianPoint : Gizmo.IndividualOrigins
 
@@ -149,6 +160,60 @@ Window {
     Pane {
         anchors.right: parent.right
         ColumnLayout {
+            Label {
+                text: "Modes:"
+            }
+            CheckBox {
+                id: translateCb
+                Layout.fillWidth: true
+                text: "Translate"
+                checked: true
+            }
+            CheckBox {
+                id: translatePlaneCb
+                Layout.fillWidth: true
+                text: "Translate Plane"
+                checked: true
+            }
+            CheckBox {
+                id: translateViewCb
+                Layout.fillWidth: true
+                text: "Translate View"
+                checked: true
+            }
+            CheckBox {
+                id: rotateCb
+                Layout.fillWidth: true
+                text: "Rotate"
+                checked: true
+            }
+            CheckBox {
+                id: rotateViewCb
+                Layout.fillWidth: true
+                text: "Rotate View"
+                checked: true
+            }
+            CheckBox {
+                id: scaleCb
+                Layout.fillWidth: true
+                text: "Scale"
+                checked: true
+            }
+            CheckBox {
+                id: scalePlaneCb
+                Layout.fillWidth: true
+                text: "Scale Plane"
+                checked: true
+            }
+            CheckBox {
+                id: scaleUniformCb
+                Layout.fillWidth: true
+                text: "Scale Uniform"
+                checked: true
+            }
+            Label {
+                text: "Config:"
+            }
             CheckBox {
                 id: localGizmo
                 Layout.fillWidth: true
@@ -159,45 +224,69 @@ Window {
                 Layout.fillWidth: true
                 text: "Pivot Individual Origin"
             }
+            Label {
+                text: "Snap:"
+            }
             CheckBox {
                 id: snappingCb
                 Layout.fillWidth: true
                 text: "Snapping"
             }
-            TextField {
-                id: snapDistanceTf
-                Layout.fillWidth: true
-                selectByMouse: true
-                placeholderText: qsTr("snapDistance")
-                text: "1"
-                validator: DoubleValidator {
-                    bottom: 0.01
-                    top: 10
-                    decimals: 2
+            RowLayout {
+                Label {
+                    Layout.fillWidth: true
+                    Layout.alignment: Qt.AlignVCenter
+                    text: "Snap Distance"
+                }
+                TextField {
+                    id: snapDistanceTf
+                    Layout.preferredWidth: 30
+                    selectByMouse: true
+                    placeholderText: qsTr("snapDistance")
+                    text: "1"
+                    validator: DoubleValidator {
+                        bottom: 0.01
+                        top: 10
+                        decimals: 2
+                    }
                 }
             }
-            TextField {
-                id: snapAngleTf
-                Layout.fillWidth: true
-                selectByMouse: true
-                placeholderText: qsTr("snapAngle")
-                text: "45"
-                validator: DoubleValidator {
-                    bottom: 1
-                    top: 180
-                    decimals: 0
+            RowLayout {
+                Label {
+                    Layout.fillWidth: true
+                    Layout.alignment: Qt.AlignVCenter
+                    text: "Snap Angle (°)"
+                }
+                TextField {
+                    id: snapAngleTf
+                    Layout.preferredWidth: 30
+                    selectByMouse: true
+                    placeholderText: qsTr("snapAngle")
+                    text: "45"
+                    validator: DoubleValidator {
+                        bottom: 1
+                        top: 180
+                        decimals: 0
+                    }
                 }
             }
-            TextField {
-                id: snapScaleTf
-                Layout.fillWidth: true
-                selectByMouse: true
-                placeholderText: qsTr("snapScale")
-                text: "1"
-                validator: DoubleValidator {
-                    bottom: 0.01
-                    top: 10
-                    decimals: 2
+            RowLayout {
+                Label {
+                    Layout.fillWidth: true
+                    Layout.alignment: Qt.AlignVCenter
+                    text: "Snap Scale"
+                }
+                TextField {
+                    id: snapScaleTf
+                    Layout.preferredWidth: 30
+                    selectByMouse: true
+                    placeholderText: qsTr("snapScale")
+                    text: "1"
+                    validator: DoubleValidator {
+                        bottom: 0.01
+                        top: 10
+                        decimals: 2
+                    }
                 }
             }
         }
