@@ -4,7 +4,7 @@
 use core::pin::Pin;
 
 use cxx_qt::CxxQtType;
-use cxx_qt_lib::{QColor, QPointF, QVector3D, QVector4D};
+use cxx_qt_lib::{QColor, QPointF, QVariant, QVector3D, QVector4D};
 use ffi::{
     GizmoModeOverride, GizmoOrientation, QQuickItemFlag, QQuickItemUpdatePaintNodeData, QSGNode,
     TransformPivotPoint,
@@ -13,6 +13,7 @@ use transform_gizmo::Color32;
 
 #[cxx_qt::bridge]
 pub mod ffi {
+
     #[repr(i32)]
     #[namespace = "rust::cxxqtlib1"]
     #[derive(Debug)]
@@ -59,9 +60,11 @@ pub mod ffi {
         include!("cxx-qt-lib/qcolor.h");
         type QColor = cxx_qt_lib::QColor;
 
+        include!("cxx-qt-lib/qvariant.h");
+        type QVariant = cxx_qt_lib::QVariant;
+
         include!(<QtQuick/QQuickItem>);
         type QQuickItem;
-
     }
 
     unsafe extern "C++" {
@@ -140,6 +143,7 @@ pub mod ffi {
         #[qproperty(QVector3D, targetPosition, rust_name = "target_position")]
         #[qproperty(QVector4D, targetRotation, rust_name = "target_rotation")]
         #[qproperty(QVector3D, targetScale, rust_name = "target_scale")]
+        #[qproperty(QVariant, targets)]
         #[qproperty(GizmoOrientation, orientation)]
         #[qproperty(TransformPivotPoint, pivotPoint, rust_name = "pivot_point")]
         #[qproperty(bool, snapping)]
@@ -226,6 +230,15 @@ pub mod ffi {
             colors: &[[f32; 4]],
             indices: &[u32],
         ) -> *mut QSGNode;
+
+        fn extract_target_count_from_qvariant(targets: QVariant) -> usize;
+
+        fn extract_targets_from_qvariant(
+            targets: QVariant,
+            positions: &mut [QVector3D],
+            rotations: &mut [QVector4D],
+            scales: &mut [QVector3D],
+        );
     }
 
     impl cxx_qt::Initialize for Gizmo {}
@@ -313,6 +326,7 @@ pub struct GizmoRust {
     target_position: QVector3D,
     target_rotation: QVector4D,
     target_scale: QVector3D,
+    targets: QVariant,
     gizmo: Option<transform_gizmo::Gizmo>,
     gizmo_updated_since_last_draw: bool,
     /// Keep last interaction in case the target moves while we are dragging
@@ -491,6 +505,10 @@ impl cxx_qt::Initialize for ffi::Gizmo {
             .release();
 
         self.as_mut()
+            .on_targets_changed(|qobject| qobject.update())
+            .release();
+
+        self.as_mut()
             .on_target_position_changed(|qobject| qobject.update())
             .release();
         self.as_mut()
@@ -528,31 +546,34 @@ impl ffi::Gizmo {
         self: Pin<&mut Self>,
         interaction: transform_gizmo::GizmoInteraction,
     ) {
-        let transform = transform_gizmo::math::Transform::from_scale_rotation_translation(
-            glam::Vec3::new(
-                self.target_scale.x(),
-                self.target_scale.y(),
-                self.target_scale.z(),
-            )
-            .as_dvec3(),
-            glam::Quat::from_xyzw(
-                self.target_rotation.x(),
-                self.target_rotation.y(),
-                self.target_rotation.z(),
-                self.target_rotation.w(),
-            )
-            .as_dquat(),
-            glam::Vec3::new(
-                self.target_position.x(),
-                self.target_position.y(),
-                self.target_position.z(),
-            )
-            .as_dvec3(),
+        let target_count = ffi::extract_target_count_from_qvariant(self.rust().targets.clone());
+        let mut positions = vec![QVector3D::default(); target_count];
+        let mut rotations = vec![QVector4D::default(); target_count];
+        let mut scales = vec![QVector3D::default(); target_count];
+
+        ffi::extract_targets_from_qvariant(
+            self.rust().targets.clone(),
+            &mut positions,
+            &mut rotations,
+            &mut scales,
         );
+
+        assert!(positions.len() == rotations.len());
+        assert!(positions.len() == scales.len());
+        let transforms = itertools::multizip((positions, rotations, scales))
+            .map(|(position, rotation, scale)| {
+                transform_gizmo::math::Transform::from_scale_rotation_translation(
+                    glam::Vec3::new(scale.x(), scale.y(), scale.z()).as_dvec3(),
+                    glam::Quat::from_xyzw(rotation.x(), rotation.y(), rotation.z(), rotation.w())
+                        .as_dquat(),
+                    glam::Vec3::new(position.x(), position.y(), position.z()).as_dvec3(),
+                )
+            })
+            .collect::<Vec<_>>();
 
         self.with_gizmo(|mut qobject, gizmo| {
             qobject.as_mut().rust_mut().gizmo_updated_since_last_draw = true;
-            let result = gizmo.update(interaction, &[transform]);
+            let result = gizmo.update(interaction, &transforms);
 
             if let Some((_, transforms)) = result {
                 let transform = transforms.first().unwrap();

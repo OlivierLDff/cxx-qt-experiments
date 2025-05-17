@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <QtCore/QVariant>
 #include <QtQuick/QSGNode>
 #include <QtQuick/QQuickItem>
 #include <array>
@@ -21,6 +22,7 @@ public:
         setAcceptHoverEvents(true);
         setAcceptedMouseButtons(Qt::LeftButton);
     }
+    virtual ~GizmoInteractionItem() = default;
 
 protected:
     void hoverEnterEvent(QHoverEvent *event) override
@@ -136,3 +138,6 @@ QSGNode *gizmo_update_paint_node(QSGNode *oldNode,
                                  rust::Slice<std::array<float, 2> const> vertices,
                                  rust::Slice<std::array<float, 4> const> colors,
                                  rust::Slice<std::uint32_t const> indices);
+
+std::size_t extract_target_count_from_qvariant(QVariant targets);
+void extract_targets_from_qvariant(QVariant targets, rust::Slice<QVector3D> positions, rust::Slice<QVector4D> rotations, rust::Slice<QVector3D> scales);

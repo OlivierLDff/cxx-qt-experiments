@@ -18,7 +18,8 @@ Window {
 
     View3D {
         id: view
-        property Model pickedModel: cube1
+        // property Model pickedModel: cube1
+        property list<Model> pickedModels: []
         anchors.fill: parent
 
         environment: SceneEnvironment {
@@ -95,11 +96,27 @@ Window {
         anchors.fill: parent
         onClicked: mouse => {
             const result = view.pick(mouse.x, mouse.y);
-            if (result.objectHit !== view.pickedModel) {
-                view.pickedModel = result.objectHit;
-                mouse.accepted = true;
+            if ((mouse.modifiers & Qt.ShiftModifier) || (mouse.modifiers & Qt.ControlModifier)) {
+                if (result.objectHit !== null) {
+                    const index = view.pickedModels.indexOf(result.objectHit);
+                    if (index === -1) {
+                        view.pickedModels.push(result.objectHit);
+                        gizmo.updateTargets();
+                        mouse.accepted = true;
+                    }
+                }
             } else {
-                mouse.accepted = false;
+                if (result.objectHit !== null) {
+                    view.pickedModels = [result.objectHit];
+                    gizmo.updateTargets();
+                    mouse.accepted = true;
+                } else {
+                    if (view.pickedModels.length > 0) {
+                        view.pickedModels = [];
+                        gizmo.updateTargets();
+                        mouse.accepted = true;
+                    }
+                }
             }
         }
     }
@@ -107,6 +124,7 @@ Window {
     // NOTE: order matters, gizmo must first receive mouse events before the
     //       camera controller
     Gizmo {
+        id: gizmo
         visible: view.pickedModel !== null
 
         anchors.fill: parent
@@ -140,20 +158,36 @@ Window {
         strokeWidth: strokeWidthSlider.value
         gizmoSize: gizmoSizeSlider.value
 
-        targetPosition: view.pickedModel ? view.pickedModel.position : Qt.vector3d(0, 0, 0)
-        targetRotation: view.pickedModel ? view.pickedModel.rotation.toVector4d() : Qt.quaternion(0, 0, 0, 1)
-        targetScale: view.pickedModel ? view.pickedModel.scale : Qt.vector3d(1, 1, 1)
+        function updateTargets() {
+            let newTargets = [];
 
-        onTransformUpdated: (newPosition, newRotation, newScale) => {
-            if (view.pickedModel === null) {
-                return;
+            for (let i = 0; i < view.pickedModels.length; i++) {
+                const model = view.pickedModels[i];
+                newTargets.push({
+                    position: model.position,
+                    rotation: model.rotation.toVector4d(),
+                    scale: model.scale
+                });
             }
 
-            view.pickedModel.position = newPosition;
-            // IMPORTANT: quaternion expect the scalar part first in qt's api
-            view.pickedModel.rotation = Qt.quaternion(newRotation.w, newRotation.x, newRotation.y, newRotation.z);
-            view.pickedModel.scale = newScale;
+            console.log(`new targets: ${newTargets}`);
+            targets = newTargets;
         }
+
+        // targetPosition: view.pickedModel ? view.pickedModel.position : Qt.vector3d(0, 0, 0)
+        // targetRotation: view.pickedModel ? view.pickedModel.rotation.toVector4d() : Qt.quaternion(0, 0, 0, 1)
+        // targetScale: view.pickedModel ? view.pickedModel.scale : Qt.vector3d(1, 1, 1)
+
+        // onTransformUpdated: (newPosition, newRotation, newScale) => {
+        //     if (view.pickedModel === null) {
+        //         return;
+        //     }
+
+        //     view.pickedModel.position = newPosition;
+        //     // IMPORTANT: quaternion expect the scalar part first in qt's api
+        //     view.pickedModel.rotation = Qt.quaternion(newRotation.w, newRotation.x, newRotation.y, newRotation.z);
+        //     view.pickedModel.scale = newScale;
+        // }
     }
 
     DebugView {

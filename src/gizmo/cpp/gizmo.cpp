@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Olivier Le Doeuff <olivier.ldff@gmail.com>
 // SPDX-License-Identifier: MIT
 
+#include <QtGui/QVector3D>
+#include <QtGui/QVector4D>
 #include <QtQuick/QQuickItem>
 #include <QtQuick/QSGGeometryNode>
 #include <QtQuick/QSGGeometry>
@@ -63,4 +65,32 @@ QSGNode *gizmo_update_paint_node(QSGNode *oldNode,
 
     node->markDirty(QSGNode::DirtyGeometry);
     return node;
+}
+std::size_t extract_target_count_from_qvariant(QVariant targets)
+{
+    const auto targetsList = targets.toList();
+    return targetsList.size();
+}
+
+void extract_targets_from_qvariant(QVariant targets, rust::Slice<QVector3D> positions, rust::Slice<QVector4D> rotations, rust::Slice<QVector3D> scales)
+{
+    const auto targetsList = targets.toList();
+
+    assert(std::size_t(targetsList.size()) == positions.size());
+    assert(std::size_t(targetsList.size()) == rotations.size());
+    assert(std::size_t(targetsList.size()) == scales.size());
+
+    for (int i = 0; i < targetsList.size(); ++i)
+    {
+        const auto target = targetsList.at(i);
+
+        const QMap<QString, QVariant> targetMap = target.toMap();
+        const QVariant position = targetMap.value("position", QVector3D());
+        const QVariant rotation = targetMap.value("rotation", QVector4D(0.f, 0.f, 0.f, 1.f));
+        const QVariant scale = targetMap.value("scale", QVector3D(1.f, 1.f, 1.f));
+
+        positions[i] = qvariant_cast<QVector3D>(position);
+        rotations[i] = qvariant_cast<QVector4D>(rotation);
+        scales[i] = qvariant_cast<QVector3D>(scale);
+    }
 }

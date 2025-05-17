@@ -13,6 +13,7 @@ cxx-qt.workspace = true
 cxx-qt-lib = { workspace = true, features = ["qt_full"] }
 transform-gizmo.workspace = true
 glam = { workspace = true, features = ["mint"] }
+itertools.workspace = true
 
 [build-dependencies]
 cxx-qt-build.workspace = true
