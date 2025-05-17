@@ -92,13 +92,12 @@ Window {
 
     MouseArea {
         anchors.fill: parent
-        onClicked: (mouse) => {
+        onClicked: mouse => {
             const result = view.pick(mouse.x, mouse.y);
-            if(result.objectHit !== view.pickedModel) {
+            if (result.objectHit !== view.pickedModel) {
                 view.pickedModel = result.objectHit;
                 mouse.accepted = true;
-            }
-            else {
+            } else {
                 mouse.accepted = false;
             }
         }
@@ -120,12 +119,17 @@ Window {
         orientation: localGizmo.checked ? Gizmo.Local : Gizmo.Global
         pivotPoint: pivotIndividualOrigin.checked ? Gizmo.MedianPoint : Gizmo.IndividualOrigins
 
+        snapping: snappingCb.checked
+        snapDistance: parseFloat(snapDistanceTf.text) * 100
+        snapAngle: parseFloat(snapAngleTf.text) * Math.PI / 180
+        snapScale: parseFloat(snapScaleTf.text)
+
         targetPosition: view.pickedModel ? view.pickedModel.position : Qt.vector3d(0, 0, 0)
         targetRotation: view.pickedModel ? view.pickedModel.rotation.toVector4d() : Qt.quaternion(0, 0, 0, 1)
         targetScale: view.pickedModel ? view.pickedModel.scale : Qt.vector3d(1, 1, 1)
 
         onTransformUpdated: (newPosition, newRotation, newScale) => {
-            if(view.pickedModel === null) {
+            if (view.pickedModel === null) {
                 return;
             }
 
@@ -152,6 +156,48 @@ Window {
                 id: pivotIndividualOrigin
                 Layout.fillWidth: true
                 text: "Pivot Individual Origin"
+            }
+            CheckBox {
+                id: snappingCb
+                Layout.fillWidth: true
+                text: "Snapping"
+            }
+            TextField {
+                id: snapDistanceTf
+                Layout.fillWidth: true
+                selectByMouse: true
+                placeholderText: qsTr("snapDistance")
+                text: "1"
+                validator: DoubleValidator {
+                    bottom: 0.01
+                    top: 10
+                    decimals: 2
+                }
+            }
+            TextField {
+                id: snapAngleTf
+                Layout.fillWidth: true
+                selectByMouse: true
+                placeholderText: qsTr("snapAngle")
+                text: "45"
+                validator: DoubleValidator {
+                    bottom: 1
+                    top: 180
+                    decimals: 0
+                }
+                // onTextChanged: console.log("text : " + (parseFloat(text) *))
+            }
+            TextField {
+                id: snapScaleTf
+                Layout.fillWidth: true
+                selectByMouse: true
+                placeholderText: qsTr("snapScale")
+                text: "1"
+                validator: DoubleValidator {
+                    bottom: 0.01
+                    top: 10
+                    decimals: 2
+                }
             }
         }
     }

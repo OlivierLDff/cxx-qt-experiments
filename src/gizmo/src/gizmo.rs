@@ -96,6 +96,10 @@ pub mod ffi {
         #[qproperty(QVector3D, targetScale, rust_name = "target_scale")]
         #[qproperty(GizmoOrientation, orientation)]
         #[qproperty(TransformPivotPoint, pivotPoint, rust_name = "pivot_point")]
+        #[qproperty(bool, snapping)]
+        #[qproperty(f32, snapAngle, rust_name = "snap_angle")]
+        #[qproperty(f32, snapDistance, rust_name = "snap_distance")]
+        #[qproperty(f32, snapScale, rust_name = "snap_scale")]
         type Gizmo = super::GizmoRust;
 
         #[inherit]
@@ -217,8 +221,18 @@ pub struct GizmoRust {
     gizmo_updated_since_last_draw: bool,
     /// Keep last interaction in case the target moves while we are dragging
     gizmo_last_interaction: Option<transform_gizmo::GizmoInteraction>,
+    /// Determines the gizmo's orientation relative to global or local axes.
     orientation: GizmoOrientation,
+    /// Pivot point for transformations
     pivot_point: TransformPivotPoint,
+    /// Toggles snapping to predefined increments during transformations for precision.
+    snapping: bool,
+    /// Angle increment for snapping rotations, in radians.
+    snap_angle: f32,
+    /// Distance increment for snapping translations.
+    snap_distance: f32,
+    /// Scale increment for snapping scalings.
+    snap_scale: f32,
 }
 
 impl GizmoRust {
@@ -250,6 +264,13 @@ impl GizmoRust {
 
 impl cxx_qt::Initialize for ffi::Gizmo {
     fn initialize(mut self: Pin<&mut Self>) {
+        {
+            let mut this = self.as_mut().rust_mut();
+            this.snap_angle = transform_gizmo::config::DEFAULT_SNAP_ANGLE;
+            this.snap_distance = transform_gizmo::config::DEFAULT_SNAP_DISTANCE;
+            this.snap_scale = transform_gizmo::config::DEFAULT_SNAP_SCALE;
+        }
+
         self.as_mut()
             .set_flag(QQuickItemFlag::ItemHasContents, true);
 
@@ -403,13 +424,30 @@ impl ffi::Gizmo {
     }
 
     fn gizmo_config(&self) -> transform_gizmo::GizmoConfig {
-        let view_matrix = self.rust().view_matrix();
         let size = self.size();
+        let this = self.rust();
+        let view_matrix = this.view_matrix();
         let width = size.width() as f32;
         let height = size.height() as f32;
-        let projection_matrix = self.rust().projection_matrix(width, height);
-        let orientation = self.rust().orientation.into();
-        let pivot_point = self.rust().pivot_point.into();
+        let projection_matrix = this.projection_matrix(width, height);
+        let orientation = this.orientation.into();
+        let pivot_point = this.pivot_point.into();
+        let snapping = this.snapping;
+        let snap_angle = if this.snap_angle.is_finite() {
+            this.snap_angle.abs()
+        } else {
+            transform_gizmo::config::DEFAULT_SNAP_ANGLE
+        };
+        let snap_distance = if this.snap_distance.is_finite() {
+            this.snap_distance.abs()
+        } else {
+            transform_gizmo::config::DEFAULT_SNAP_DISTANCE
+        };
+        let snap_scale = if this.snap_scale.is_finite() {
+            this.snap_scale.abs()
+        } else {
+            transform_gizmo::config::DEFAULT_SNAP_SCALE
+        };
 
         transform_gizmo::GizmoConfig {
             view_matrix: view_matrix.as_dmat4().into(),
@@ -423,6 +461,10 @@ impl ffi::Gizmo {
             },
             orientation,
             pivot_point,
+            snapping,
+            snap_angle,
+            snap_distance,
+            snap_scale,
             ..Default::default()
         }
     }
