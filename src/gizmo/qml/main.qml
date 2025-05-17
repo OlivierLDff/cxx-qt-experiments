@@ -118,6 +118,7 @@ Window {
         cameraFarPlane: camera.clipFar
 
         orientation: localGizmo.checked ? Gizmo.Local : Gizmo.Global
+        pivotPoint: pivotIndividualOrigin.checked ? Gizmo.MedianPoint : Gizmo.IndividualOrigins
 
         targetPosition: view.pickedModel ? view.pickedModel.position : Qt.vector3d(0, 0, 0)
         targetRotation: view.pickedModel ? view.pickedModel.rotation.toVector4d() : Qt.quaternion(0, 0, 0, 1)
@@ -146,6 +147,11 @@ Window {
                 id: localGizmo
                 Layout.fillWidth: true
                 text: "Local Gizmo"
+            }
+            CheckBox {
+                id: pivotIndividualOrigin
+                Layout.fillWidth: true
+                text: "Pivot Individual Origin"
             }
         }
     }

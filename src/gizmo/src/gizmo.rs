@@ -188,6 +188,21 @@ impl Default for TransformPivotPoint {
     }
 }
 
+impl From<TransformPivotPoint> for transform_gizmo::config::TransformPivotPoint {
+    fn from(value: TransformPivotPoint) -> Self {
+        match value {
+            TransformPivotPoint::MedianPoint => Self::MedianPoint,
+            TransformPivotPoint::IndividualOrigins => Self::IndividualOrigins,
+            _ => {
+                eprintln!(
+                    "Unknown TransformPivotPoint, defaulting to TransformPivotPoint::MedianPoint"
+                );
+                Self::MedianPoint
+            }
+        }
+    }
+}
+
 #[derive(Default)]
 pub struct GizmoRust {
     camera_position: QVector3D,
@@ -394,6 +409,7 @@ impl ffi::Gizmo {
         let height = size.height() as f32;
         let projection_matrix = self.rust().projection_matrix(width, height);
         let orientation = self.rust().orientation.into();
+        let pivot_point = self.rust().pivot_point.into();
 
         transform_gizmo::GizmoConfig {
             view_matrix: view_matrix.as_dmat4().into(),
@@ -406,6 +422,7 @@ impl ffi::Gizmo {
                 },
             },
             orientation,
+            pivot_point,
             ..Default::default()
         }
     }
