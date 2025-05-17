@@ -137,6 +137,9 @@ Window {
         snapScale: parseFloat(snapScaleTf.text.replace(",", "."))
         pixelsPerPoint: Screen.devicePixelRatio
 
+        strokeWidth: strokeWidthSlider.value
+        gizmoSize: gizmoSizeSlider.value
+
         targetPosition: view.pickedModel ? view.pickedModel.position : Qt.vector3d(0, 0, 0)
         targetRotation: view.pickedModel ? view.pickedModel.rotation.toVector4d() : Qt.quaternion(0, 0, 0, 1)
         targetScale: view.pickedModel ? view.pickedModel.scale : Qt.vector3d(1, 1, 1)
@@ -287,6 +290,39 @@ Window {
                         top: 10
                         decimals: 2
                     }
+                }
+            }
+            Label {
+                text: "Visuals:"
+            }
+            RowLayout {
+                Label {
+                    Layout.fillWidth: true
+                    Layout.alignment: Qt.AlignVCenter
+                    text: "Stroke Width"
+                }
+                Slider {
+                    id: strokeWidthSlider
+                    Layout.preferredWidth: 100
+                    from: 1
+                    to: 10
+                    stepSize: 1
+                    value: 4
+                }
+            }
+            RowLayout {
+                Label {
+                    Layout.fillWidth: true
+                    Layout.alignment: Qt.AlignVCenter
+                    text: "Gizmo Size"
+                }
+                Slider {
+                    id: gizmoSizeSlider
+                    Layout.preferredWidth: 100
+                    from: 1
+                    to: 200
+                    stepSize: 1
+                    value: 75
                 }
             }
         }

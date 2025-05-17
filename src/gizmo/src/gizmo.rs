@@ -160,6 +160,10 @@ pub mod ffi {
         #[qproperty(QColor, yColor, rust_name = "y_color")]
         #[qproperty(QColor, zColor, rust_name = "z_color")]
         #[qproperty(QColor, sColor, rust_name = "s_color")]
+        #[qproperty(f32, inactiveAlpha, rust_name = "inactive_alpha")]
+        #[qproperty(f32, highlightAlpha, rust_name = "highlight_alpha")]
+        #[qproperty(f32, strokeWidth, rust_name = "stroke_width")]
+        #[qproperty(f32, gizmoSize, rust_name = "gizmo_size")]
         type Gizmo = super::GizmoRust;
 
         #[inherit]
@@ -340,6 +344,14 @@ pub struct GizmoRust {
     y_color: QColor,
     z_color: QColor,
     s_color: QColor,
+    /// Alpha of the gizmo color when inactive
+    inactive_alpha: f32,
+    /// Alpha of the gizmo color when highlighted/active
+    highlight_alpha: f32,
+    /// Width (thickness) of the gizmo strokes
+    stroke_width: f32,
+    /// Gizmo size in pixels
+    gizmo_size: f32,
 }
 
 impl GizmoRust {
@@ -386,10 +398,16 @@ impl cxx_qt::Initialize for ffi::Gizmo {
             this.scale_enabled = true;
             this.scale_plane_enabled = true;
             this.scale_uniform_enabled = true;
+
             this.x_color = QColor::from_rgb(255, 0, 125);
             this.y_color = QColor::from_rgb(0, 255, 125);
             this.z_color = QColor::from_rgb(0, 125, 255);
             this.s_color = QColor::from_rgb(255, 255, 255);
+
+            this.inactive_alpha = 0.7;
+            this.highlight_alpha = 1.0;
+            this.stroke_width = 4.0;
+            this.gizmo_size = 75.0;
         }
 
         self.as_mut()
@@ -444,6 +462,32 @@ impl cxx_qt::Initialize for ffi::Gizmo {
 
         self.as_mut()
             .on_orientation_changed(|qobject| qobject.update())
+            .release();
+
+        self.as_mut()
+            .on_x_color_changed(|qobject| qobject.update())
+            .release();
+        self.as_mut()
+            .on_y_color_changed(|qobject| qobject.update())
+            .release();
+        self.as_mut()
+            .on_z_color_changed(|qobject| qobject.update())
+            .release();
+        self.as_mut()
+            .on_s_color_changed(|qobject| qobject.update())
+            .release();
+
+        self.as_mut()
+            .on_inactive_alpha_changed(|qobject| qobject.update())
+            .release();
+        self.as_mut()
+            .on_highlight_alpha_changed(|qobject| qobject.update())
+            .release();
+        self.as_mut()
+            .on_stroke_width_changed(|qobject| qobject.update())
+            .release();
+        self.as_mut()
+            .on_gizmo_size_changed(|qobject| qobject.update())
             .release();
 
         self.as_mut()
@@ -638,6 +682,7 @@ impl ffi::Gizmo {
             modes
         };
         let mode_override = this.mode_override.into();
+
         let visuals = transform_gizmo::GizmoVisuals {
             x_color: Color32::from_rgb(
                 this.x_color.red() as u8,
@@ -659,6 +704,26 @@ impl ffi::Gizmo {
                 this.s_color.green() as u8,
                 this.s_color.blue() as u8,
             ),
+            inactive_alpha: if this.inactive_alpha.is_finite() {
+                this.inactive_alpha.abs()
+            } else {
+                0.7
+            },
+            highlight_alpha: if this.highlight_alpha.is_finite() {
+                this.highlight_alpha.abs()
+            } else {
+                1.0
+            },
+            stroke_width: if this.stroke_width.is_finite() {
+                this.stroke_width.abs()
+            } else {
+                4.0
+            },
+            gizmo_size: if this.gizmo_size.is_finite() {
+                this.gizmo_size.abs()
+            } else {
+                75.0
+            },
             ..Default::default()
         };
 
