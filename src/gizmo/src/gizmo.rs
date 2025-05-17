@@ -5,7 +5,9 @@ use core::pin::Pin;
 
 use cxx_qt::CxxQtType;
 use cxx_qt_lib::{QPointF, QVector3D, QVector4D};
-use ffi::{QQuickItemFlag, QQuickItemUpdatePaintNodeData, QSGNode};
+use ffi::{
+    GizmoOrientation, QQuickItemFlag, QQuickItemUpdatePaintNodeData, QSGNode, TransformPivotPoint,
+};
 
 #[cxx_qt::bridge]
 pub mod ffi {
@@ -62,6 +64,24 @@ pub mod ffi {
         type QSGNode;
     }
 
+    #[qenum(Gizmo)]
+    /// The point in space around which all rotations are centered.
+    enum TransformPivotPoint {
+        /// Pivot around the median point of targets
+        MedianPoint,
+        /// Pivot around each target's own origin
+        IndividualOrigins,
+    }
+
+    /// Orientation of a gizmo.
+    #[qenum(Gizmo)]
+    enum GizmoOrientation {
+        /// Transformation axes are aligned to world space.
+        Global,
+        /// Transformation axes are aligned to the last target's orientation.
+        Local,
+    }
+
     unsafe extern "RustQt" {
         #[qobject]
         #[qml_element]
@@ -74,6 +94,8 @@ pub mod ffi {
         #[qproperty(QVector3D, targetPosition, rust_name = "target_position")]
         #[qproperty(QVector4D, targetRotation, rust_name = "target_rotation")]
         #[qproperty(QVector3D, targetScale, rust_name = "target_scale")]
+        #[qproperty(GizmoOrientation, orientation)]
+        #[qproperty(TransformPivotPoint, pivotPoint, rust_name = "pivot_point")]
         type Gizmo = super::GizmoRust;
 
         #[inherit]
@@ -141,7 +163,32 @@ pub mod ffi {
     impl cxx_qt::Initialize for Gizmo {}
 }
 
-#[derive(Debug, Default)]
+impl Default for GizmoOrientation {
+    fn default() -> Self {
+        Self::Global
+    }
+}
+
+impl From<GizmoOrientation> for transform_gizmo::GizmoOrientation {
+    fn from(value: GizmoOrientation) -> Self {
+        match value {
+            GizmoOrientation::Global => Self::Global,
+            GizmoOrientation::Local => Self::Local,
+            _ => {
+                eprintln!("Unknown GizmoOrientation, defaulting to GizmoOrientation::Global");
+                Self::Global
+            }
+        }
+    }
+}
+
+impl Default for TransformPivotPoint {
+    fn default() -> Self {
+        Self::MedianPoint
+    }
+}
+
+#[derive(Default)]
 pub struct GizmoRust {
     camera_position: QVector3D,
     camera_rotation: QVector4D,
@@ -155,6 +202,8 @@ pub struct GizmoRust {
     gizmo_updated_since_last_draw: bool,
     /// Keep last interaction in case the target moves while we are dragging
     gizmo_last_interaction: Option<transform_gizmo::GizmoInteraction>,
+    orientation: GizmoOrientation,
+    pivot_point: TransformPivotPoint,
 }
 
 impl GizmoRust {
@@ -203,6 +252,10 @@ impl cxx_qt::Initialize for ffi::Gizmo {
             .release();
         self.as_mut()
             .on_camera_rotation_changed(|qobject| qobject.update())
+            .release();
+
+        self.as_mut()
+            .on_orientation_changed(|qobject| qobject.update())
             .release();
 
         self.as_mut()
@@ -340,6 +393,7 @@ impl ffi::Gizmo {
         let width = size.width() as f32;
         let height = size.height() as f32;
         let projection_matrix = self.rust().projection_matrix(width, height);
+        let orientation = self.rust().orientation.into();
 
         transform_gizmo::GizmoConfig {
             view_matrix: view_matrix.as_dmat4().into(),
@@ -351,6 +405,7 @@ impl ffi::Gizmo {
                     y: height,
                 },
             },
+            orientation,
             ..Default::default()
         }
     }

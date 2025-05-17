@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: MIT
 
 import QtQuick
+import QtQuick.Layouts
+import QtQuick.Controls
 import QtQuick3D
 import QtQuick3D.Helpers
 
@@ -115,6 +117,8 @@ Window {
         cameraNearPlane: camera.clipNear
         cameraFarPlane: camera.clipFar
 
+        orientation: localGizmo.checked ? Gizmo.Local : Gizmo.Global
+
         targetPosition: view.pickedModel ? view.pickedModel.position : Qt.vector3d(0, 0, 0)
         targetRotation: view.pickedModel ? view.pickedModel.rotation.toVector4d() : Qt.quaternion(0, 0, 0, 1)
         targetScale: view.pickedModel ? view.pickedModel.scale : Qt.vector3d(1, 1, 1)
@@ -133,5 +137,16 @@ Window {
 
     DebugView {
         source: view
+    }
+
+    Pane {
+        anchors.right: parent.right
+        ColumnLayout {
+            CheckBox {
+                id: localGizmo
+                Layout.fillWidth: true
+                text: "Local Gizmo"
+            }
+        }
     }
 }
