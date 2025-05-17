@@ -4,6 +4,7 @@
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls
+import QtQuick.Window
 import QtQuick3D
 import QtQuick3D.Helpers
 
@@ -120,9 +121,10 @@ Window {
         pivotPoint: pivotIndividualOrigin.checked ? Gizmo.MedianPoint : Gizmo.IndividualOrigins
 
         snapping: snappingCb.checked
-        snapDistance: parseFloat(snapDistanceTf.text) * 100
-        snapAngle: parseFloat(snapAngleTf.text) * Math.PI / 180
-        snapScale: parseFloat(snapScaleTf.text)
+        snapDistance: parseFloat(snapDistanceTf.text.replace(",", ".")) * 100
+        snapAngle: parseFloat(snapAngleTf.text.replace(",", ".")) * Math.PI / 180
+        snapScale: parseFloat(snapScaleTf.text.replace(",", "."))
+        pixelsPerPoint: Screen.devicePixelRatio
 
         targetPosition: view.pickedModel ? view.pickedModel.position : Qt.vector3d(0, 0, 0)
         targetRotation: view.pickedModel ? view.pickedModel.rotation.toVector4d() : Qt.quaternion(0, 0, 0, 1)
@@ -185,7 +187,6 @@ Window {
                     top: 180
                     decimals: 0
                 }
-                // onTextChanged: console.log("text : " + (parseFloat(text) *))
             }
             TextField {
                 id: snapScaleTf

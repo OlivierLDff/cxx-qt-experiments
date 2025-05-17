@@ -100,6 +100,7 @@ pub mod ffi {
         #[qproperty(f32, snapAngle, rust_name = "snap_angle")]
         #[qproperty(f32, snapDistance, rust_name = "snap_distance")]
         #[qproperty(f32, snapScale, rust_name = "snap_scale")]
+        #[qproperty(f32, pixelsPerPoint, rust_name = "pixels_per_point")]
         type Gizmo = super::GizmoRust;
 
         #[inherit]
@@ -233,6 +234,8 @@ pub struct GizmoRust {
     snap_distance: f32,
     /// Scale increment for snapping scalings.
     snap_scale: f32,
+    /// Ratio of window's physical size to logical size.
+    pixels_per_point: f32,
 }
 
 impl GizmoRust {
@@ -269,6 +272,7 @@ impl cxx_qt::Initialize for ffi::Gizmo {
             this.snap_angle = transform_gizmo::config::DEFAULT_SNAP_ANGLE;
             this.snap_distance = transform_gizmo::config::DEFAULT_SNAP_DISTANCE;
             this.snap_scale = transform_gizmo::config::DEFAULT_SNAP_SCALE;
+            this.pixels_per_point = 1.;
         }
 
         self.as_mut()
@@ -448,6 +452,11 @@ impl ffi::Gizmo {
         } else {
             transform_gizmo::config::DEFAULT_SNAP_SCALE
         };
+        let pixels_per_point = if this.pixels_per_point.is_finite() {
+            this.pixels_per_point.abs()
+        } else {
+            1.0
+        };
 
         transform_gizmo::GizmoConfig {
             view_matrix: view_matrix.as_dmat4().into(),
@@ -465,6 +474,7 @@ impl ffi::Gizmo {
             snap_angle,
             snap_distance,
             snap_scale,
+            pixels_per_point,
             ..Default::default()
         }
     }
