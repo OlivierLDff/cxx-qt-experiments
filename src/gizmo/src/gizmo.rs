@@ -4,11 +4,12 @@
 use core::pin::Pin;
 
 use cxx_qt::CxxQtType;
-use cxx_qt_lib::{QPointF, QVector3D, QVector4D};
+use cxx_qt_lib::{QColor, QPointF, QVector3D, QVector4D};
 use ffi::{
     GizmoModeOverride, GizmoOrientation, QQuickItemFlag, QQuickItemUpdatePaintNodeData, QSGNode,
     TransformPivotPoint,
 };
+use transform_gizmo::Color32;
 
 #[cxx_qt::bridge]
 pub mod ffi {
@@ -54,6 +55,9 @@ pub mod ffi {
 
         include!("cxx-qt-lib/qvector4d.h");
         type QVector4D = cxx_qt_lib::QVector4D;
+
+        include!("cxx-qt-lib/qcolor.h");
+        type QColor = cxx_qt_lib::QColor;
 
         include!(<QtQuick/QQuickItem>);
         type QQuickItem;
@@ -152,6 +156,10 @@ pub mod ffi {
         #[qproperty(bool, scaleUniformEnabled, rust_name = "scale_uniform_enabled")]
         #[qproperty(bool, scalePlaneEnabled, rust_name = "scale_plane_enabled")]
         #[qproperty(GizmoModeOverride, modeOverride, rust_name = "mode_override")]
+        #[qproperty(QColor, xColor, rust_name = "x_color")]
+        #[qproperty(QColor, yColor, rust_name = "y_color")]
+        #[qproperty(QColor, zColor, rust_name = "z_color")]
+        #[qproperty(QColor, sColor, rust_name = "s_color")]
         type Gizmo = super::GizmoRust;
 
         #[inherit]
@@ -328,6 +336,10 @@ pub struct GizmoRust {
     scale_uniform_enabled: bool,
     scale_plane_enabled: bool,
     mode_override: GizmoModeOverride,
+    x_color: QColor,
+    y_color: QColor,
+    z_color: QColor,
+    s_color: QColor,
 }
 
 impl GizmoRust {
@@ -374,6 +386,10 @@ impl cxx_qt::Initialize for ffi::Gizmo {
             this.scale_enabled = true;
             this.scale_plane_enabled = true;
             this.scale_uniform_enabled = true;
+            this.x_color = QColor::from_rgb(255, 0, 125);
+            this.y_color = QColor::from_rgb(0, 255, 125);
+            this.z_color = QColor::from_rgb(0, 125, 255);
+            this.s_color = QColor::from_rgb(255, 255, 255);
         }
 
         self.as_mut()
@@ -622,6 +638,29 @@ impl ffi::Gizmo {
             modes
         };
         let mode_override = this.mode_override.into();
+        let visuals = transform_gizmo::GizmoVisuals {
+            x_color: Color32::from_rgb(
+                this.x_color.red() as u8,
+                this.x_color.green() as u8,
+                this.x_color.blue() as u8,
+            ),
+            y_color: Color32::from_rgb(
+                this.y_color.red() as u8,
+                this.y_color.green() as u8,
+                this.y_color.blue() as u8,
+            ),
+            z_color: Color32::from_rgb(
+                this.z_color.red() as u8,
+                this.z_color.green() as u8,
+                this.z_color.blue() as u8,
+            ),
+            s_color: Color32::from_rgb(
+                this.s_color.red() as u8,
+                this.s_color.green() as u8,
+                this.s_color.blue() as u8,
+            ),
+            ..Default::default()
+        };
 
         transform_gizmo::GizmoConfig {
             view_matrix: view_matrix.as_dmat4().into(),
@@ -641,6 +680,7 @@ impl ffi::Gizmo {
             snap_angle,
             snap_distance,
             snap_scale,
+            visuals,
             pixels_per_point,
             ..Default::default()
         }
