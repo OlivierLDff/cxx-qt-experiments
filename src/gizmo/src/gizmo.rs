@@ -233,7 +233,7 @@ pub mod ffi {
         fn extract_target_count_from_qvariant(targets: &QVariant) -> usize;
 
         fn extract_targets_from_qvariant(
-            targets: QVariant,
+            targets: &QVariant,
             positions: &mut [QVector3D],
             rotations: &mut [QVector4D],
             scales: &mut [QVector3D],
@@ -587,7 +587,7 @@ impl ffi::Gizmo {
         let mut scales = vec![QVector3D::default(); target_count];
 
         ffi::extract_targets_from_qvariant(
-            self.rust().targets.clone(),
+            self.targets(),
             &mut positions,
             &mut rotations,
             &mut scales,

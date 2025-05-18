@@ -141,6 +141,6 @@ QSGNode *gizmo_update_paint_node(QSGNode *oldNode,
 
 std::size_t extract_target_count_from_qvariant(const QVariant &targets);
 
-void extract_targets_from_qvariant(QVariant targets, rust::Slice<QVector3D> positions, rust::Slice<QVector4D> rotations, rust::Slice<QVector3D> scales);
+void extract_targets_from_qvariant(const QVariant &targets, rust::Slice<QVector3D> positions, rust::Slice<QVector4D> rotations, rust::Slice<QVector3D> scales);
 
 QVariant transforms_to_qvariant(rust::Slice<QVector3D const> positions, rust::Slice<QVector4D const> rotations, rust::Slice<QVector3D const> scales);

@@ -81,7 +81,7 @@ std::size_t extract_target_count_from_qvariant(const QVariant &targets)
     return targetsList.size();
 }
 
-void extract_targets_from_qvariant(QVariant targets, rust::Slice<QVector3D> positions, rust::Slice<QVector4D> rotations, rust::Slice<QVector3D> scales)
+void extract_targets_from_qvariant(const QVariant &targets, rust::Slice<QVector3D> positions, rust::Slice<QVector4D> rotations, rust::Slice<QVector3D> scales)
 {
     const auto targetsList = targets.toList();
 
