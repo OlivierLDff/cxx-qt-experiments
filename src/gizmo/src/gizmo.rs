@@ -180,6 +180,10 @@ pub mod ffi {
         #[inherit]
         fn size(self: &Gizmo) -> QSizeF;
 
+        #[inherit]
+        #[rust_name = "is_visible"]
+        fn isVisible(self: &Gizmo) -> bool;
+
         #[cxx_override]
         #[cxx_name = "updateInteraction"]
         fn update_interaction(
@@ -204,12 +208,7 @@ pub mod ffi {
 
         #[qsignal]
         #[cxx_name = "transformUpdated"]
-        fn transform_updated(
-            self: Pin<&mut Gizmo>,
-            position: QVector3D,
-            rotation: QVector4D,
-            scale: QVector3D,
-        );
+        fn transform_updated(self: Pin<&mut Gizmo>, transforms: QVariant);
     }
 
     unsafe extern "C++" {
@@ -239,6 +238,12 @@ pub mod ffi {
             rotations: &mut [QVector4D],
             scales: &mut [QVector3D],
         );
+
+        fn transforms_to_qvariant(
+            positions: &[QVector3D],
+            rotations: &[QVector4D],
+            scales: &[QVector3D],
+        ) -> QVariant;
     }
 
     impl cxx_qt::Initialize for Gizmo {}
@@ -535,7 +540,34 @@ impl ffi::Gizmo {
             drag_started,
             dragging,
         };
-        self.as_mut().update_interaction_impl(interaction);
+        let result = self.as_mut().update_interaction_impl(interaction);
+        if let Some((_, transforms)) = result {
+            let (positions, rotations, scales): (Vec<QVector3D>, Vec<QVector4D>, Vec<QVector3D>) =
+                itertools::multiunzip(transforms.iter().map(|transform| {
+                    let position = QVector3D::new(
+                        transform.translation.x as f32,
+                        transform.translation.y as f32,
+                        transform.translation.z as f32,
+                    );
+                    let rotation = QVector4D::new(
+                        transform.rotation.v.x as f32,
+                        transform.rotation.v.y as f32,
+                        transform.rotation.v.z as f32,
+                        transform.rotation.s as f32,
+                    );
+                    let scale = QVector3D::new(
+                        transform.scale.x as f32,
+                        transform.scale.y as f32,
+                        transform.scale.z as f32,
+                    );
+
+                    (position, rotation, scale)
+                }));
+            let transforms = ffi::transforms_to_qvariant(&positions, &rotations, &scales);
+
+            self.as_mut().rust_mut().targets = transforms.clone();
+            self.as_mut().transform_updated(transforms);
+        }
         self.as_mut().rust_mut().gizmo_last_interaction = Some(transform_gizmo::GizmoInteraction {
             drag_started: false,
             ..interaction
@@ -545,7 +577,10 @@ impl ffi::Gizmo {
     fn update_interaction_impl(
         self: Pin<&mut Self>,
         interaction: transform_gizmo::GizmoInteraction,
-    ) {
+    ) -> Option<(
+        transform_gizmo::GizmoResult,
+        Vec<transform_gizmo::math::Transform>,
+    )> {
         let target_count = ffi::extract_target_count_from_qvariant(self.rust().targets.clone());
         let mut positions = vec![QVector3D::default(); target_count];
         let mut rotations = vec![QVector4D::default(); target_count];
@@ -573,42 +608,8 @@ impl ffi::Gizmo {
 
         self.with_gizmo(|mut qobject, gizmo| {
             qobject.as_mut().rust_mut().gizmo_updated_since_last_draw = true;
-            let result = gizmo.update(interaction, &transforms);
-
-            if let Some((_, transforms)) = result {
-                let transform = transforms.first().unwrap();
-                let position = QVector3D::new(
-                    transform.translation.x as f32,
-                    transform.translation.y as f32,
-                    transform.translation.z as f32,
-                );
-                let rotation = QVector4D::new(
-                    transform.rotation.v.x as f32,
-                    transform.rotation.v.y as f32,
-                    transform.rotation.v.z as f32,
-                    transform.rotation.s as f32,
-                );
-                let scale = QVector3D::new(
-                    transform.scale.x as f32,
-                    transform.scale.y as f32,
-                    transform.scale.z as f32,
-                );
-
-                // Emit the signal only if the values have changed
-                // Also emitting the signal from update_paint_node result in very bad performance
-                if position != qobject.target_position
-                    || rotation != qobject.target_rotation
-                    || scale != qobject.target_scale
-                {
-                    // Internally update the state, so we don't trigger "onChanged" signals when the
-                    // user updates its values
-                    qobject.as_mut().rust_mut().target_position = position.clone();
-                    qobject.as_mut().rust_mut().target_rotation = rotation.clone();
-                    qobject.as_mut().rust_mut().target_scale = scale.clone();
-                    qobject.transform_updated(position.clone(), rotation.clone(), scale.clone());
-                }
-            }
-        });
+            gizmo.update(interaction, &transforms)
+        })
     }
 
     fn pick_preview(self: Pin<&mut Self>, cursor_position: QPointF) -> bool {
@@ -781,12 +782,22 @@ impl ffi::Gizmo {
         // This case can happen if the camera is updated for example
         if !self.rust().gizmo_updated_since_last_draw {
             let interaction = self.rust().gizmo_last_interaction.unwrap_or_default();
-            self.as_mut().update_interaction_impl(interaction);
+            assert!(
+                !interaction.drag_started,
+                "We don't want to repeat a drag started interaction"
+            );
+
+            let _ = self.as_mut().update_interaction_impl(interaction);
         }
         self.as_mut().rust_mut().gizmo_updated_since_last_draw = false;
 
-        self.with_gizmo(|_, gizmo| unsafe {
-            let draw_data = gizmo.draw();
+        self.with_gizmo(|qobject, gizmo| unsafe {
+            let target_count = ffi::extract_target_count_from_qvariant(qobject.targets().clone());
+            let draw_data = if target_count > 0 && qobject.is_visible() {
+                gizmo.draw()
+            } else {
+                transform_gizmo::GizmoDrawData::default()
+            };
 
             ffi::gizmo_update_paint_node(
                 old_node,

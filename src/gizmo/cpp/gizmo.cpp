@@ -18,6 +18,15 @@ QSGNode *gizmo_update_paint_node(QSGNode *oldNode,
 {
     assert(vertices.size() == colors.size());
 
+    if (vertices.empty())
+    {
+        assert(indices.empty());
+        if (oldNode)
+            delete oldNode;
+
+        return nullptr;
+    }
+
     QSGGeometryNode *node = nullptr;
     QSGGeometry *geometry = nullptr;
 
@@ -93,4 +102,26 @@ void extract_targets_from_qvariant(QVariant targets, rust::Slice<QVector3D> posi
         rotations[i] = qvariant_cast<QVector4D>(rotation);
         scales[i] = qvariant_cast<QVector3D>(scale);
     }
+}
+
+QVariant transforms_to_qvariant(rust::Slice<QVector3D const> positions, rust::Slice<QVector4D const> rotations, rust::Slice<QVector3D const> scales)
+{
+    assert(positions.size() == rotations.size());
+    assert(positions.size() == scales.size());
+
+    QVector<QVariant> transforms;
+    for (std::size_t i = 0; i < positions.size(); ++i)
+    {
+        QMap<QString, QVariant> transform;
+
+        transform.insert("position", positions[i]);
+        transform.insert("rotation", rotations[i]);
+        transform.insert("scale", scales[i]);
+
+        transforms.emplace_back(transform);
+    }
+
+    QVariant variant = transforms;
+    qDebug() << "transforms cpp" << variant;
+    return variant;
 }

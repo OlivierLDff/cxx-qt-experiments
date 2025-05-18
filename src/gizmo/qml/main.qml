@@ -147,7 +147,7 @@ Window {
         scaleUniformEnabled: scaleUniformCb.checked
 
         orientation: localGizmo.checked ? Gizmo.Local : Gizmo.Global
-        pivotPoint: pivotIndividualOrigin.checked ? Gizmo.MedianPoint : Gizmo.IndividualOrigins
+        pivotPoint: pivotIndividualOrigin.checked ? Gizmo.IndividualOrigins : Gizmo.MedianPoint
 
         snapping: snappingCb.checked
         snapDistance: parseFloat(snapDistanceTf.text.replace(",", ".")) * 100
@@ -178,15 +178,28 @@ Window {
         // targetRotation: view.pickedModel ? view.pickedModel.rotation.toVector4d() : Qt.quaternion(0, 0, 0, 1)
         // targetScale: view.pickedModel ? view.pickedModel.scale : Qt.vector3d(1, 1, 1)
 
+        onTransformUpdated: (transforms) => {
+            if(view.pickedModels.length !== transforms.length) {
+                console.warn("Transforms count doesn't match our targets, something is wrong")
+                return;
+            }
+            for (let i = 0; i < view.pickedModels.length; i++) {
+                const transform = transforms[i];
+                const model = view.pickedModels[i];
+
+                model.position = transform.position;
+                // IMPORTANT: quaternion expect the scalar part first in qt's api
+                model.rotation = Qt.quaternion(transform.rotation.w, transform.rotation.x, transform.rotation.y, transform.rotation.z);
+                model.scale = transform.scale;
+            }
+        }
+
         // onTransformUpdated: (newPosition, newRotation, newScale) => {
         //     if (view.pickedModel === null) {
         //         return;
         //     }
 
         //     view.pickedModel.position = newPosition;
-        //     // IMPORTANT: quaternion expect the scalar part first in qt's api
-        //     view.pickedModel.rotation = Qt.quaternion(newRotation.w, newRotation.x, newRotation.y, newRotation.z);
-        //     view.pickedModel.scale = newScale;
         // }
     }
 
