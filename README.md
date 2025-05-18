@@ -30,7 +30,7 @@ More information about how I re-implemented the example can be found in the [bez
 
 `transform-gizmo` is a framework-agnostic Rust crate that provides a feature-rich and customizable 3D transformation gizmo for manipulating the position, rotation and scale of 3D entities.
 
-![video](https://github.com/user-attachments/assets/66f1b48b-eded-40c0-907f-6f86ebe89e0e)
+<https://github.com/user-attachments/assets/66f1b48b-eded-40c0-907f-6f86ebe89e0e>
 
 To run the example, use the following command:
 
