@@ -230,7 +230,7 @@ pub mod ffi {
             indices: &[u32],
         ) -> *mut QSGNode;
 
-        fn extract_target_count_from_qvariant(targets: QVariant) -> usize;
+        fn extract_target_count_from_qvariant(targets: &QVariant) -> usize;
 
         fn extract_targets_from_qvariant(
             targets: QVariant,
@@ -581,7 +581,7 @@ impl ffi::Gizmo {
         transform_gizmo::GizmoResult,
         Vec<transform_gizmo::math::Transform>,
     )> {
-        let target_count = ffi::extract_target_count_from_qvariant(self.rust().targets.clone());
+        let target_count = ffi::extract_target_count_from_qvariant(self.targets());
         let mut positions = vec![QVector3D::default(); target_count];
         let mut rotations = vec![QVector4D::default(); target_count];
         let mut scales = vec![QVector3D::default(); target_count];
@@ -792,7 +792,7 @@ impl ffi::Gizmo {
         self.as_mut().rust_mut().gizmo_updated_since_last_draw = false;
 
         self.with_gizmo(|qobject, gizmo| unsafe {
-            let target_count = ffi::extract_target_count_from_qvariant(qobject.targets().clone());
+            let target_count = ffi::extract_target_count_from_qvariant(qobject.targets());
             let draw_data = if target_count > 0 && qobject.is_visible() {
                 gizmo.draw()
             } else {

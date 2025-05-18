@@ -62,29 +62,29 @@ Window {
             ]
 
             // Showcase external update of target position during hover/dragging of the gizmo
-            SequentialAnimation on y {
-                loops: Animation.Infinite
-                NumberAnimation {
-                    duration: 3000
-                    to: -150
-                    from: 150
-                    easing.type: Easing.InQuad
-                }
-                PauseAnimation {
-                    duration: 1000
-                }
-                NumberAnimation {
-                    duration: 3000
-                    to: 150
-                    from: -150
-                    easing.type: Easing.OutQuad
-                }
-                PauseAnimation {
-                    duration: 1000
-                }
-            }
+            // SequentialAnimation on y {
+            //     loops: Animation.Infinite
+            //     NumberAnimation {
+            //         duration: 3000
+            //         to: -150
+            //         from: 150
+            //         easing.type: Easing.InQuad
+            //     }
+            //     PauseAnimation {
+            //         duration: 1000
+            //     }
+            //     NumberAnimation {
+            //         duration: 3000
+            //         to: 150
+            //         from: -150
+            //         easing.type: Easing.OutQuad
+            //     }
+            //     PauseAnimation {
+            //         duration: 1000
+            //     }
+            // }
 
-            onYChanged: () => gizmo.updateTargets()
+            // onYChanged: () => gizmo.updateTargets()
         }
         AxisHelper {}
     }
@@ -188,6 +188,10 @@ Window {
                 model.rotation = Qt.quaternion(transform.rotation.w, transform.rotation.x, transform.rotation.y, transform.rotation.z);
                 model.scale = transform.scale;
             }
+        }
+
+        Component.onCompleted: () => {
+            updateTargets();
         }
     }
 

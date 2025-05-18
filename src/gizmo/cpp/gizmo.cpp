@@ -75,7 +75,7 @@ QSGNode *gizmo_update_paint_node(QSGNode *oldNode,
     node->markDirty(QSGNode::DirtyGeometry);
     return node;
 }
-std::size_t extract_target_count_from_qvariant(QVariant targets)
+std::size_t extract_target_count_from_qvariant(const QVariant &targets)
 {
     const auto targetsList = targets.toList();
     return targetsList.size();
@@ -121,7 +121,5 @@ QVariant transforms_to_qvariant(rust::Slice<QVector3D const> positions, rust::Sl
         transforms.emplace_back(transform);
     }
 
-    QVariant variant = transforms;
-    qDebug() << "transforms cpp" << variant;
-    return variant;
+    return transforms;
 }
