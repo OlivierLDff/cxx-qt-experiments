@@ -769,7 +769,6 @@ impl ffi::Gizmo {
             snap_scale,
             visuals,
             pixels_per_point,
-            ..Default::default()
         }
     }
 
