@@ -18,8 +18,7 @@ Window {
 
     View3D {
         id: view
-        // property Model pickedModel: cube1
-        property list<Model> pickedModels: []
+        property list<Model> pickedModels: [cube1]
         anchors.fill: parent
 
         environment: SceneEnvironment {
@@ -63,27 +62,29 @@ Window {
             ]
 
             // Showcase external update of target position during hover/dragging of the gizmo
-            // SequentialAnimation on y {
-            //     loops: Animation.Infinite
-            //     NumberAnimation {
-            //         duration: 3000
-            //         to: -150
-            //         from: 150
-            //         easing.type: Easing.InQuad
-            //     }
-            //     PauseAnimation {
-            //         duration: 1000
-            //     }
-            //     NumberAnimation {
-            //         duration: 3000
-            //         to: 150
-            //         from: -150
-            //         easing.type: Easing.OutQuad
-            //     }
-            //     PauseAnimation {
-            //         duration: 1000
-            //     }
-            // }
+            SequentialAnimation on y {
+                loops: Animation.Infinite
+                NumberAnimation {
+                    duration: 3000
+                    to: -150
+                    from: 150
+                    easing.type: Easing.InQuad
+                }
+                PauseAnimation {
+                    duration: 1000
+                }
+                NumberAnimation {
+                    duration: 3000
+                    to: 150
+                    from: -150
+                    easing.type: Easing.OutQuad
+                }
+                PauseAnimation {
+                    duration: 1000
+                }
+            }
+
+            onYChanged: () => gizmo.updateTargets()
         }
         AxisHelper {}
     }
@@ -170,13 +171,8 @@ Window {
                 });
             }
 
-            console.log(`new targets: ${newTargets}`);
             targets = newTargets;
         }
-
-        // targetPosition: view.pickedModel ? view.pickedModel.position : Qt.vector3d(0, 0, 0)
-        // targetRotation: view.pickedModel ? view.pickedModel.rotation.toVector4d() : Qt.quaternion(0, 0, 0, 1)
-        // targetScale: view.pickedModel ? view.pickedModel.scale : Qt.vector3d(1, 1, 1)
 
         onTransformUpdated: (transforms) => {
             if(view.pickedModels.length !== transforms.length) {
@@ -193,14 +189,6 @@ Window {
                 model.scale = transform.scale;
             }
         }
-
-        // onTransformUpdated: (newPosition, newRotation, newScale) => {
-        //     if (view.pickedModel === null) {
-        //         return;
-        //     }
-
-        //     view.pickedModel.position = newPosition;
-        // }
     }
 
     DebugView {
