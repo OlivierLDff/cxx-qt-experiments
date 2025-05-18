@@ -9,7 +9,6 @@ use ffi::{
     GizmoModeOverride, GizmoOrientation, QQuickItemFlag, QQuickItemUpdatePaintNodeData, QSGNode,
     TransformPivotPoint,
 };
-use transform_gizmo::Color32;
 
 #[cxx_qt::bridge]
 pub mod ffi {
@@ -706,22 +705,22 @@ impl ffi::Gizmo {
         let mode_override = this.mode_override.into();
 
         let visuals = transform_gizmo::GizmoVisuals {
-            x_color: Color32::from_rgb(
+            x_color: transform_gizmo::Color32::from_rgb(
                 this.x_color.red() as u8,
                 this.x_color.green() as u8,
                 this.x_color.blue() as u8,
             ),
-            y_color: Color32::from_rgb(
+            y_color: transform_gizmo::Color32::from_rgb(
                 this.y_color.red() as u8,
                 this.y_color.green() as u8,
                 this.y_color.blue() as u8,
             ),
-            z_color: Color32::from_rgb(
+            z_color: transform_gizmo::Color32::from_rgb(
                 this.z_color.red() as u8,
                 this.z_color.green() as u8,
                 this.z_color.blue() as u8,
             ),
-            s_color: Color32::from_rgb(
+            s_color: transform_gizmo::Color32::from_rgb(
                 this.s_color.red() as u8,
                 this.s_color.green() as u8,
                 this.s_color.blue() as u8,

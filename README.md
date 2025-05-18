@@ -23,3 +23,19 @@ nix develop . --command cargo run -p bezier_curve
 ```
 
 More information about how I re-implemented the example can be found in the [bezier_curve](src/bezier_curve/README.md) directory.
+
+### `gizmo`
+
+`QQuickItem` gizmo using `transform-gizmo` crate.
+
+`transform-gizmo` is a framework-agnostic Rust crate that provides a feature-rich and customizable 3D transformation gizmo for manipulating the position, rotation and scale of 3D entities.
+
+![video](https://github.com/user-attachments/assets/66f1b48b-eded-40c0-907f-6f86ebe89e0e)
+
+To run the example, use the following command:
+
+```bash
+nix develop . --command cargo run -p gizmo
+```
+
+More information about how I implemented can be found in the [gizmo](src/gizmo/README.md) directory.
