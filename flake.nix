@@ -95,6 +95,7 @@
           name = "cxx-qt-dev-shell";
           inherit buildInputs;
           inherit NIX_QMLIMPORTSCANNER;
+          RUSTC_WRAPPER = "${pkgs.sccache}/bin/sccache";
           # Somehow the cache miss some recompilation leaving me with wrong qml files
           # Doc: https://doc.qt.io/qt-5/qmldiskcache.html
           QML_DISABLE_DISK_CACHE = 1;
