@@ -126,7 +126,7 @@ Window {
     //       camera controller
     Gizmo {
         id: gizmo
-        visible: view.pickedModel !== null
+        visible: view.pickedModels.length > 0
 
         anchors.fill: parent
 

@@ -139,9 +139,6 @@ pub mod ffi {
         #[qproperty(f32, cameraVerticalFoV, rust_name = "camera_vertical_fov")]
         #[qproperty(f32, cameraNearPlane, rust_name = "camera_near_plane")]
         #[qproperty(f32, cameraFarPlane, rust_name = "camera_far_plane")]
-        #[qproperty(QVector3D, targetPosition, rust_name = "target_position")]
-        #[qproperty(QVector4D, targetRotation, rust_name = "target_rotation")]
-        #[qproperty(QVector3D, targetScale, rust_name = "target_scale")]
         #[qproperty(QVariant, targets)]
         #[qproperty(GizmoOrientation, orientation)]
         #[qproperty(TransformPivotPoint, pivotPoint, rust_name = "pivot_point")]
@@ -327,9 +324,6 @@ pub struct GizmoRust {
     camera_vertical_fov: f32,
     camera_near_plane: f32,
     camera_far_plane: f32,
-    target_position: QVector3D,
-    target_rotation: QVector4D,
-    target_scale: QVector3D,
     targets: QVariant,
     gizmo: Option<transform_gizmo::Gizmo>,
     gizmo_updated_since_last_draw: bool,
@@ -510,16 +504,6 @@ impl cxx_qt::Initialize for ffi::Gizmo {
 
         self.as_mut()
             .on_targets_changed(|qobject| qobject.update())
-            .release();
-
-        self.as_mut()
-            .on_target_position_changed(|qobject| qobject.update())
-            .release();
-        self.as_mut()
-            .on_target_rotation_changed(|qobject| qobject.update())
-            .release();
-        self.as_mut()
-            .on_target_scale_changed(|qobject| qobject.update())
             .release();
     }
 }
