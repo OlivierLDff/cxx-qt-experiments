@@ -170,8 +170,7 @@ dependencies = [
 [[package]]
 name = "cxx-qt"
 version = "0.7.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1013b28f54b0872a7d1a08e46325ab0603de7aab30bbf41c08bfafb8bb4a2656"
+source = "git+https://github.com/KDAB/cxx-qt.git#fb83a896afb6f5fcd8a15d3bbf0ced707044f155"
 dependencies = [
  "cxx",
  "cxx-qt-build",
@@ -184,8 +183,7 @@ dependencies = [
 [[package]]
 name = "cxx-qt-build"
 version = "0.7.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4cee79cc965fc86eece3c84896d30b075a49b98dce784c7f874a8b6827536239"
+source = "git+https://github.com/KDAB/cxx-qt.git#fb83a896afb6f5fcd8a15d3bbf0ced707044f155"
 dependencies = [
  "cc",
  "codespan-reporting 0.11.1",
@@ -202,11 +200,11 @@ dependencies = [
 [[package]]
 name = "cxx-qt-gen"
 version = "0.7.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fa5e6dd2c802128a9cd3c6f295b4aa3239d5bc67fa366b2e08fb895baea85b1f"
+source = "git+https://github.com/KDAB/cxx-qt.git#fb83a896afb6f5fcd8a15d3bbf0ced707044f155"
 dependencies = [
  "clang-format",
  "convert_case",
+ "cxx-gen",
  "indoc",
  "proc-macro2",
  "quote",
@@ -216,8 +214,7 @@ dependencies = [
 [[package]]
 name = "cxx-qt-lib"
 version = "0.7.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "42e4ea0cf8e4b89b81ca92f3e6ad9d4b73f493e7616d46a64a73153731dc14bc"
+source = "git+https://github.com/KDAB/cxx-qt.git#fb83a896afb6f5fcd8a15d3bbf0ced707044f155"
 dependencies = [
  "cxx",
  "cxx-qt",
@@ -228,11 +225,11 @@ dependencies = [
 [[package]]
 name = "cxx-qt-macro"
 version = "0.7.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "48c4c602fd8a942cb1986df9255e3fd8613cddb6e0e383119f2eb5450dc0ab12"
+source = "git+https://github.com/KDAB/cxx-qt.git#fb83a896afb6f5fcd8a15d3bbf0ced707044f155"
 dependencies = [
  "cxx-qt-gen",
  "proc-macro2",
+ "quote",
  "syn",
 ]
 
@@ -584,10 +581,10 @@ checksum = "afbdc74edc00b6f6a218ca6a5364d6226a259d4b8ea1af4a0ea063f27e179f4d"
 [[package]]
 name = "qt-build-utils"
 version = "0.7.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ce2f932be2cc04afebe74dc6f434377dd53ea63f562ad14c99176f01267a8917"
+source = "git+https://github.com/KDAB/cxx-qt.git#fb83a896afb6f5fcd8a15d3bbf0ced707044f155"
 dependencies = [
  "cc",
+ "serde",
  "thiserror",
  "versions",
 ]

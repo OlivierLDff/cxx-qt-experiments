@@ -2,7 +2,10 @@
 // SPDX-License-Identifier: MIT
 
 pub mod gizmo;
-use cxx_qt_lib::{QGuiApplication, QQmlApplicationEngine, QUrl};
+use core::pin::Pin;
+
+use cxx_qt::Upcast;
+use cxx_qt_lib::{QGuiApplication, QQmlApplicationEngine, QQmlEngine, QUrl};
 
 fn main() {
     let mut app = QGuiApplication::new();
@@ -13,8 +16,9 @@ fn main() {
     }
 
     if let Some(engine) = engine.as_mut() {
+        let engine: Pin<&mut QQmlEngine> = engine.upcast_pin();
+        // Listen to a signal from the QML Engine
         engine
-            .as_qqmlengine()
             .on_quit(|_| {
                 println!("QML Quit!");
             })

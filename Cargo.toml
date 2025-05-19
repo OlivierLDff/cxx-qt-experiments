@@ -13,9 +13,9 @@ authors = ["Olivier Le Doeuff <olivier.ldff@gmail.com>"]
 
 [workspace.dependencies]
 cxx = "1.0.95"
-cxx-qt = "0.7"
-cxx-qt-lib = "0.7"
-cxx-qt-build = "0.7"
+cxx-qt = { git = "https://github.com/KDAB/cxx-qt.git" }
+cxx-qt-lib = { git = "https://github.com/KDAB/cxx-qt.git" }
+cxx-qt-build = { git = "https://github.com/KDAB/cxx-qt.git" }
 transform-gizmo = "0.6"
 glam = "0.30"
 mint = "0.5"
